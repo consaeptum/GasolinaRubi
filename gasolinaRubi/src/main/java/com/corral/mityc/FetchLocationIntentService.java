@@ -1,16 +1,11 @@
-package com.corral.gasolinarubi;
+package com.corral.mityc;
 
 import android.app.IntentService;
-import android.content.Intent;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.provider.ContactsContract;
-
-import com.google.android.gms.games.Players;
-
-import java.util.Date;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in

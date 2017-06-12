@@ -1,4 +1,4 @@
-package com.corral.gasolinarubi;
+package com.corral.mityc;
 
 import android.content.Context;
 import android.content.Intent;
@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.corral.gasolinarubi.Parseo.*;
+import static com.corral.mityc.Parseo.*;
 
 public class NuevaPoblacion extends AppCompatActivity {
 

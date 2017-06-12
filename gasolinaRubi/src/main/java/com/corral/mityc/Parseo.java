@@ -1,4 +1,4 @@
-package com.corral.gasolinarubi;
+package com.corral.mityc;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -23,13 +23,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.corral.gasolinarubi.Constantes.codigosPoblacion;
-import static com.corral.gasolinarubi.Constantes.codigosProvincia;
-import static com.corral.gasolinarubi.Constantes.log;
+import static com.corral.mityc.Constantes.codigosPoblacion;
+import static com.corral.mityc.Constantes.codigosProvincia;
 
 
 /**
@@ -270,9 +268,9 @@ public class Parseo {
 
             return direccion;
         } catch (MalformedURLException mfue) {
-            log.log(Level.ALL, mfue.getMessage());
+            //log.log(Level.ALL, mfue.getMessage());
         } catch (JSONException e) {
-            log.log(Level.ALL, e.getMessage());
+            //log.log(Level.ALL, e.getMessage());
         } catch (IOException ioe) {
             throw new FalloConexion();
         }
@@ -330,9 +328,9 @@ public class Parseo {
             }
             return loc;
         } catch (MalformedURLException mfue) {
-            log.log(Level.ALL, mfue.getMessage());
+            //log.log(Level.ALL, mfue.getMessage());
         } catch (JSONException e) {
-            log.log(Level.ALL, e.getMessage());
+            //log.log(Level.ALL, e.getMessage());
         } catch (IOException ioe) {
             throw new FalloConexion();
         }
