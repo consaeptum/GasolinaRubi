@@ -317,6 +317,7 @@ public class Parseo {
 
             // si hay coincidencia, procedemos, si no, probamos en el caso que sea una provincia
             // y Google devolviera el formato "Provincia, Spain".
+            // Usamos provider de Location para guardar el nombre de la población.  TRICK.
             if (m.matches()) {
                 loc.setProvider(m.group(3));
             } else {
