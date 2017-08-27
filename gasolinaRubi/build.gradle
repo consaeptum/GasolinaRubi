@@ -1,0 +1,49 @@
+apply plugin: 'com.android.application'
+
+android {
+
+    signingConfigs {
+        release {
+            storeFile file("/home/javier/Certificados/googlePlay/keystore.jks")
+            storePassword "100casas"
+            keyAlias "corral"
+            keyPassword "100casas"
+        }
+        buildTypes {
+            release {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileSdkVersion 25
+    buildToolsVersion '25.0.0'
+    defaultConfig {
+        applicationId "com.corral.mityc"
+        minSdkVersion 15
+        targetSdkVersion 25
+        versionCode 20
+        versionName "1.82"
+        multiDexEnabled = true
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:design:25.3.1'
+    compile 'com.android.support:multidex:1.0.1'
+    compile 'com.android.support:support-v4:25.3.1'
+    compile 'org.jsoup:jsoup:1.9.2'
+    compile 'com.google.android.gms:play-services-location:11.0.4'
+    compile 'com.google.android.gms:play-services-maps:11.0.4'
+    compile 'com.google.android.gms:play-services-ads:11.0.4'
+    testCompile 'junit:junit:4.12'
+}
