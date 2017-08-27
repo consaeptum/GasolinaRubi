@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.corral.mityc">
+
+    <permission
+        android:name="com.corral.mityc.permission.MAPS_RECEIVE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.corral.mityc.permission.MAPS_RECEIVE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name="android.support.multidex.MultiDexApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name=".MitycRubi"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".NuevaPoblacion">
+        </activity>
+
+        <activity
+            android:name=".SplashActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="@string/title_activity_splash"
+            android:theme="@style/FullscreenTheme">
+        </activity>
+
+        <service
+            android:name=".ServicioScrapMityc"
+            android:exported="false" />
+
+        <service
+            android:name=".FetchLocationIntentService"
+            android:exported="false" />
+
+        <!-- debug key ==============================================
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyA8WBx-K8heBgZCXFd1JrDx9trwI2c_JwM" />
+        -->
+
+        <!-- no usar esta
+        release key ============================================
+        <meta-data
+            android:name="com.google.android.maps.v2.API_KEY"
+            android:value="AIzaSyCpO-ZW1VXMA-bHBykvauLkPpFLEJwpbuU" />
+        -->
+
+        <!--
+        release key ==== gasolinaRubi ========================== -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDRvqFweFI1QLpC7FCuonfswkXmsdL5k74" />
+
+    </application>
+
+</manifest>
