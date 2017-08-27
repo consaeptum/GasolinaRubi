@@ -4,8 +4,6 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.location.Location;
 
-import com.opencsv.CSVReader;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,14 +45,22 @@ public class Parseo {
         try {
             InputStream csvStream = assetManager.open("poblaciones.csv");
             InputStreamReader csvStreamReader = new InputStreamReader(csvStream);
-            CSVReader csvReader = new CSVReader(csvStreamReader, '|');
+            CSVFile csvReader = new CSVFile(csvStream, "\\|");
             String[] line;
 
+            /*
             // throw away the header
             csvReader.readNext();
 
             while ((line = csvReader.readNext()) != null) {
                 codigosPoblacion.add(line);
+            }
+            */
+
+            List<String[]> pobList = csvReader.read();
+
+            for(String[] pobData:pobList ) {
+                codigosPoblacion.add(pobData);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -285,10 +291,9 @@ public class Parseo {
     http://maps.google.com/maps/api/geocode/json?latlng=41.4833,2.0333&sensor=true
     */
     public static Location getLocation(String localidad) throws FalloConexion, RegistroNoExistente {
-        String urlLocalidad = "?address=" + buscarCodigoAPoblacion(localidad)
-                + "," + buscarCodigoAProvincia(localidad) +"&sensor=true";
-        String urlTotal = "http://maps.google.com/maps/api/geocode/json" + urlLocalidad;
-        urlTotal = urlTotal.replace(" ", "+");
+        String urlLocalidad = "?address=" + sinAcentos(buscarCodigoAPoblacion(localidad))
+                + "," + sinAcentos(buscarCodigoAProvincia(localidad)) +"&sensor=true";
+        String urlTotal = "http://maps.google.com/maps/api/geocode/json" + urlLocalidad.replace(" ", "+");
 
         try {
             URL url = new URL(urlTotal);
@@ -396,6 +401,39 @@ public class Parseo {
         s = s.trim();
         return s.replaceAll("[\\p{InCombiningDiacriticalMarks}]", "");
     }
+}
 
 
+class CSVFile {
+    InputStream inputStream;
+    String separador;
+
+    public CSVFile(InputStream inputStream, String s){
+        this.inputStream = inputStream;
+        this.separador = s;
+    }
+
+    public List read(){
+        List resultList = new ArrayList();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        try {
+            String csvLine;
+            while ((csvLine = reader.readLine()) != null) {
+                String[] row = csvLine.split(separador);
+                resultList.add(row);
+            }
+        }
+        catch (IOException ex) {
+            throw new RuntimeException("Error in reading CSV file: "+ex);
+        }
+        finally {
+            try {
+                inputStream.close();
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Error while closing input stream: "+e);
+            }
+        }
+        return resultList;
+    }
 }

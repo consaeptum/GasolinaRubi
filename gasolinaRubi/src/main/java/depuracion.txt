@@ -1,0 +1,77 @@
+16/jun/17   [X] Impedir que aparezca ningún log.
+
+                - solución:
+
+                        buildTypes {
+                                release {
+                                    minifyEnabled true  // recordar dejarlo en false mientras no
+                                                        // se publica la versión Release.
+
+16/jun/17   [X] En ocasiones al cambiar de población (una población previamente añadida), se muestra
+                el título correctamente, pero tras cargarse el cache correcto, se descargan los
+                datos de otra población.  Cuando la conexión es lenta sucede más amenudo.
+
+                - solución: En AddressResultReceiver.onReceiveResult hacemos que si obtenemos
+                FAILURE_RESULT vuelva a intentar startActionScrap con la misma población.
+
+16/jun/17   [X] el pulsar <-' la aplicación finaliza y muestra "aplicación detenida de forma imprevista"
+
+                Es necesario recuperar Los fragments de SavedInstanceState.
+                - solucionado por fuerza bruta:  try / catch
+
+
+
+16/jun/17   [X] Sería más correcto que mientras se descargan los datos con realizarPeticionesHttp
+                se mostrará un reloj de arena aunque apareciera en el fondo los datos del caché.
+
+                - solución:
+                    ProgressDialog
+
+17/jun/17   [X] Aumentar precisión de geolocalización.
+
+                - solución:
+                    onLocationChanged(Location location) {
+                            localizacionConseguida(location);   // antes no se pasaba location
+                                                                // se usaba fused.
+
+22/jul/17   [x] Se añade una barra de progreso de carga de los datos en:
+                    ResponseReceive.onReceive ...  progressBar.dismiss()
+                    conectarApiGoogle ... progressBar.show()
+                    cambioPoblacion ... progressBar.show()
+
+
+19/jun/17   [X] Cuando el usuario haga click en un estación de servicio de la lista, desplegar
+                el drawerList y posicionar el mapa en la estación de servicio elegida, de modo que
+                el usuario puede pedir en el mapa verlo en GoogleMaps para ser guiado.
+
+6/ago/17    [X] En el DrawerList, mostrar un icono en el primer elemento indicando que es la
+                población en la que estamos y no una de la lista añadida con anterioridad.
+
+                - solución: Ha sido necesario crear DrawerListAdapter sustituyendo el SwipeDrawerList
+                            genérico.  Además ha sido necesario retocar la manera de funcionar del
+                            onTouchListener para el contenedor de cada opción de menú en lugar de
+                            para el texto.
+
+6/ago/17    [X] Cuando el usuario hace clic en una estación, se despliega el mapa pero si estamos
+                visualizando una aplicación diferente a la que estamos por gps, se muestra una
+                calle que exista en el mapa de la localización actual, en lugar de la población
+                seleccionada de la lista.
+
+                - Solución: Ya estaba bien excepto que utilizaba mLocation de la localización general
+                            en lugar de la localización de la Estación.
+
+6/ago/17    [X] Al hacer clic en una estación, debería acercarse la imagen a nivel de calle en el
+                mapa, más cerca que en el mapa de la población en genera.  También debería iluminarse
+                la linea de la estación al seleccionarla, como en un menú.
+
+16/jun/17   [X] Al hacer gesto a la izquierda en el DrawerView debería cerrarse incluso al tocar
+                fuera de la lista.
+
+                - Solución: Se vuelve a bloquear swipeLeft y ponemmos un botón en el drawer superior
+                            para cerrar el drawer.
+
+
+15/ago/17   [ ] Algunas direcciones de Estaciones no las reconoce bien y muestra en el mapa
+                poblaciones de otros países.
+                GeocoderHelper.fetchLocationUsingGooglemap()
+

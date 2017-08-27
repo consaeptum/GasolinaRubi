@@ -1,0 +1,68 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.corral.mityc.MitycRubi$PlaceholderFragment">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="false"
+        android:layout_alignParentRight="false"
+        android:layout_alignParentEnd="true"
+        android:background="#cdd27c"
+        android:id="@+id/linearLayout">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Estación"
+            android:id="@+id/textView"
+            android:layout_weight="3"
+            android:textAlignment="center"
+            android:textColor="#843636"
+            android:textStyle="bold"
+            android:layout_gravity="center_vertical" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Dirección"
+            android:id="@+id/textView2"
+            android:layout_weight="3"
+            android:textAlignment="center"
+            android:textColor="#843636"
+            android:textStyle="bold"
+            android:layout_gravity="center_vertical" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="pvp"
+            android:id="@+id/textView4"
+            android:layout_weight="3"
+            android:textAlignment="center"
+            android:textColor="#843636"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/scrollView1"
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="3dp"
+        android:paddingRight="2dp"
+        android:layout_below="@+id/linearLayout"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="20dp">
+
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/table_layout">
+        </TableLayout>
+    </ScrollView>
+
+
+</RelativeLayout>

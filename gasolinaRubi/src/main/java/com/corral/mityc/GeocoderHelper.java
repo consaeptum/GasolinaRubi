@@ -4,19 +4,23 @@ import android.content.Context;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.util.Log;
 
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /*
@@ -29,7 +33,7 @@ import java.util.Locale;
  */
 public class GeocoderHelper
 {
-    private static final AndroidHttpClient ANDROID_HTTP_CLIENT = AndroidHttpClient.newInstance(GeocoderHelper.class.getName());
+    //private static final AndroidHttpClient ANDROID_HTTP_CLIENT = AndroidHttpClient.newInstance(GeocoderHelper.class.getName());
 
     private boolean running = false;
 
@@ -92,8 +96,20 @@ public class GeocoderHelper
 
                 try
                 {
-                    JSONObject googleMapResponse = new JSONObject(ANDROID_HTTP_CLIENT.execute(new HttpGet(googleMapUrl),
-                            new BasicResponseHandler()));
+                    URL url = new URL(googleMapUrl);
+                    URLConnection urlCon = url.openConnection();
+                    urlCon.connect();
+                    InputStream datos = urlCon.getInputStream();
+
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+
+                    BufferedReader br = new BufferedReader(new InputStreamReader(datos));
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line);
+                    }
+
+                    JSONObject googleMapResponse = new JSONObject(sb.toString());
 
                     String cn = null;   // población
                     String cp = null;   // código postal
@@ -192,4 +208,150 @@ public class GeocoderHelper
             };
         }.execute();
     }
+
+    public void fetchLocation(final Context contex, ResultReceiver rr, final Estacion estacion)
+    {
+        // guardamos el Receiver para enviar el resultado en onPostExecute()
+        mReceiver = rr;
+
+        if (running)
+            return;
+
+        new AsyncTask<Void, Void, Location>()
+        {
+            Location location = null;
+
+            protected void onPreExecute()
+            {
+                running = true;
+            };
+
+            @Override
+            protected Location doInBackground(Void... params)
+            {
+                if (Geocoder.isPresent())
+                {
+                    try
+                    {
+                        Geocoder geocoder = new Geocoder(contex, Locale.getDefault());
+                        List<Address> addresses;
+                        addresses = geocoder.getFromLocationName(estacion.getDireccion(),5);
+                        location = new Location("");
+                        location.setLatitude(addresses.get(0).getLatitude());
+                        location.setLongitude(addresses.get(0).getLongitude());
+                    }
+                    catch (Exception ignored)
+                    {
+                        // after a while, Geocoder start to trhow "Service not availalbe" exception. really weird since it was working before (same device, same Android version etc..
+                    }
+                }
+
+                if (location != null) // i.e., Geocoder succeed
+                {
+                    return location;
+                }
+                else // i.e., Geocoder failed
+                {
+                    return fetchLocationUsingGoogleMap();
+                }
+            }
+
+            // Geocoder failed :-(
+            // Our B Plan : Google Map
+            private Location fetchLocationUsingGoogleMap()
+            {
+                String googleMapUrl = "";
+                try
+                {
+                    // la dirección en Mityc contiene espacios de más y comas que podrían ser
+                    // prescindibles.  Podría depurarse para mejorar el reconocimiento de la
+                    // dirección.
+
+                    // no reconoce carretera+e-9+km.+14,9,+rubi entre otros...
+
+// movemos en direccion la poblacion al principio
+// poblacion,direccion
+                    String direccion = estacion.getDireccion();
+                    Pattern pattern = Pattern.compile("^(.*),(.*)$");
+                    Matcher matcher = pattern.matcher(direccion);
+                    if (matcher.find())
+                    {
+                        direccion = "barcelona," + matcher.group(2).trim() + "," + matcher.group(1).replace(","," ");
+                    }
+
+                    String direc = Parseo.sinAcentos(direccion.replace(" ", "+"));
+                    googleMapUrl = "http://maps.googleapis.com/maps/api/geocode/json?address=" + direc + "&sensor=false&language=es";
+                    URL url = new URL(googleMapUrl);
+                    URLConnection urlCon = url.openConnection();
+                    urlCon.connect();
+                    InputStream datos = urlCon.getInputStream();
+
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+
+                    BufferedReader br = new BufferedReader(new InputStreamReader(datos));
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line);
+                    }
+
+                    JSONObject googleMapResponse = new JSONObject(sb.toString());
+
+                    String lat = null;   // población
+                    String lon = null;   // código postal
+
+                    // many nested loops.. not great -> use expression instead
+                    // loop among all results
+                    JSONArray results = (JSONArray) googleMapResponse.get("results");
+                    for (int i = 0; i < results.length(); i++)
+                    {
+                        // loop among all addresses within this result
+                        JSONObject result = results.getJSONObject(i);
+                        if (result.has("geometry"))
+                        {
+                            JSONObject geometry = result.getJSONObject("geometry");
+
+                                if (geometry.has("location")) {
+                                    JSONObject location = geometry.getJSONObject("location");
+                                    lat = location.getString("lat");
+                                    lon = location.getString("lng");
+                                }
+                            }
+
+                    }
+                    if ((lat != null) && (lon != null)) {
+                        location = new Location("");
+                        location.setLatitude(Double.parseDouble(lat));
+                        location.setLongitude(Double.parseDouble(lon));
+                        estacion.setLocation(location);
+                        return location;
+                    }
+
+                }
+                catch (Exception ignored)
+                {
+                    ignored.printStackTrace();
+                }
+                return null;
+            }
+
+            protected void onPostExecute(Location loc)
+            {
+                running = false;
+                if (loc != null)
+                {
+                    // Do something with cityName
+                    Log.i("GeocoderHelper", loc.toString());
+
+                    Bundle bundle = new Bundle();
+                    bundle.putSerializable(Constantes.RESULT_DATA_KEY, estacion);
+                    mReceiver.send(Constantes.SUCCESS_RESULT, bundle);
+                } else {
+                    Bundle bundle = new Bundle();
+                    bundle.putSerializable(Constantes.RESULT_DATA_KEY, estacion);
+                    mReceiver.send(Constantes.FAILURE_RESULT, bundle);
+                }
+            };
+        }.execute();
+    }
+
 }
