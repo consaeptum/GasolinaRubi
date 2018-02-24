@@ -2,6 +2,8 @@ package com.corral.mityc;
 
 import android.content.Context;
 
+import com.corral.mityc.estaciones.Estacion;
+
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
@@ -50,7 +52,7 @@ public class TablaPrecios implements Serializable {
     /**
      * constructor
      */
-    TablaPrecios(Context c) {
+    public TablaPrecios(Context c) {
         resultados = null;
         estacionReferencia = null;
         contexto = c;
@@ -112,14 +114,66 @@ public class TablaPrecios implements Serializable {
         }
     }
 
+
     /**
-     * método realizarPeticionHttp
-     * recibe tipoProducto según el LProductos[0]
-     * primero envía la petición, después comprueba si el código de status es
-     * correcto, en cuyo caso guarda en htmlRequest la página web leída.
-     * Si el status code es incorrecto, htmlRequest queda a None indicando que
-     * hubo error.
+     * método realizarPeticionWS
+     * Llama a la clase WSJsonGetEstacionesPorPoblacionConAsyncTask.obtenEstacionsPor
+     * de forma que se ejecuta la llamada al servicio web que nos devuelve la
+     * lista de estaciones para una población.  Como esta lista incluye
+     * latitud/longitud, tendremos todos los datos necesarios.
+     * Devuelve true si toda la consulta es correcta, false en caso contrario.
+     *
+     * El servicio web es del tipo:
+     *
+     * {
+         "Fecha":"Contenido de la cadena",
+         "ListaEESSPrecio":[{
+         "C.P.":"Contenido de la cadena",
+         "Dirección":"Contenido de la cadena",
+         "Horario":"Contenido de la cadena",
+         "Latitud":"Contenido de la cadena",
+         "Localidad":"Contenido de la cadena",
+         "Longitud_x0020__x0028_WGS84_x0029_":"Contenido de la cadena",
+         "Margen":"Contenido de la cadena",
+         "Municipio":"Contenido de la cadena",
+         "Precio_x0020_Biodiesel":"Contenido de la cadena",
+         "Precio_x0020_Bioetanol":"Contenido de la cadena",
+         "Precio_x0020_Gas_x0020_Natural_x0020_Comprimido":"Contenido de la cadena",
+         "Precio_x0020_Gas_x0020_Natural_x0020_Licuado":"Contenido de la cadena",
+         "Precio_x0020_Gases_x0020_licuados_x0020_del_x0020_petróleo":"Contenido de la cadena",
+         "Precio_x0020_Gasoleo_x0020_A":"Contenido de la cadena",
+         "Precio_x0020_Gasoleo_x0020_B":"Contenido de la cadena",
+         "Precio_x0020_Gasolina_x0020_95_x0020_Protección":"Contenido de la cadena",
+         "Precio_x0020_Gasolina_x0020__x0020_98":"Contenido de la cadena",
+         "Precio_x0020_Nuevo_x0020_Gasoleo_x0020_A":"Contenido de la cadena",
+         "Provincia":"Contenido de la cadena",
+         "Remisión":"Contenido de la cadena",
+         "Rótulo":"Contenido de la cadena",
+         "Tipo_x0020_Venta":"Contenido de la cadena",
+         "_x0025__x0020_BioEtanol":"Contenido de la cadena",
+         "_x0025__x0020_Éster_x0020_metílico":"Contenido de la cadena",
+         "IDEESS":"Contenido de la cadena",
+         "IDMunicipio":"Contenido de la cadena",
+         "IDProvincia":"Contenido de la cadena",
+         "IDCCAA":"Contenido de la cadena"
+     }],
+     "Nota":"Contenido de la cadena",
+     "ResultadoConsulta":"Contenido de la cadena"
+     }
+     *
      */
+    public synchronized boolean realizarPeticionJSON(String codLocalidad) {
+    }
+
+
+        /**
+         * método realizarPeticionHttp
+         * recibe tipoProducto según el LProductos[0]
+         * primero envía la petición, después comprueba si el código de status es
+         * correcto, en cuyo caso guarda en htmlRequest la página web leída.
+         * Si el status code es incorrecto, htmlRequest queda a None indicando que
+         * hubo error.
+         */
     public synchronized boolean realizarPeticionHttp(String codLocalidad) {
         iniciaResultados();
         for (String[] lp: Constantes.LProductos) {

@@ -1,4 +1,4 @@
-package com.corral.mityc;
+package com.corral.mityc.estaciones;
 
 import java.io.Serializable;
 

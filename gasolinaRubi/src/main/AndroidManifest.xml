@@ -8,6 +8,8 @@
 
     <uses-permission android:name="com.corral.mityc.permission.MAPS_RECEIVE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.location.gps" />
+
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -39,18 +41,18 @@
         </activity>
 
         <service
-            android:name=".ServicioScrapMityc"
+            android:name=".servicios.ScrapWebMitycIntentService"
             android:exported="false" />
 
         <service
-            android:name=".FetchLocationIntentService"
+            android:name=".servicios.LocationPoblacionCentroIntentService"
             android:exported="false" />
 
-        <!-- debug key ==============================================
+        <!-- debug key ============================================== -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyA8WBx-K8heBgZCXFd1JrDx9trwI2c_JwM" />
-        -->
+
 
         <!-- no usar esta
         release key ============================================
@@ -60,10 +62,11 @@
         -->
 
         <!--
-        release key ==== gasolinaRubi ========================== -->
+        release key ==== gasolinaRubi ==========================
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDRvqFweFI1QLpC7FCuonfswkXmsdL5k74" />
+        -->
 
     </application>
 

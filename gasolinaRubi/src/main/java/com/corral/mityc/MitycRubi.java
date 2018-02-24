@@ -1,10 +1,8 @@
 package com.corral.mityc;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -15,7 +13,6 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
@@ -48,39 +45,40 @@ import android.widget.ListView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.corral.mityc.estaciones.Estacion;
+import com.corral.mityc.receptores.CityNameResultReceiverFromGeocoder;
+import com.corral.mityc.receptores.LocationEstacionResultReceiverFromGeocoder;
+import com.corral.mityc.receptores.LocationPoblacionCentroResultReceiver;
+import com.corral.mityc.receptores.ScrapWebMitycReceiver;
+import com.corral.mityc.servicios.GeocoderHelperConAsynctask;
+import com.corral.mityc.servicios.LocationPoblacionCentroIntentService;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.maps.CameraUpdate;
-import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static android.support.v4.view.ViewPager.LayoutParams.MATCH_PARENT;
-import static com.corral.mityc.MitycRubi.PlaceholderFragment.omrc;
 import static com.corral.mityc.Parseo.buscarCodigoAPoblacion;
-import static com.corral.mityc.Parseo.buscarCodigoPoblacion;
 import static com.corral.mityc.Parseo.cargaCodigosPoblacion;
 import static com.corral.mityc.R.id.container;
 import static com.google.ads.AdRequest.LOGTAG;
@@ -95,12 +93,18 @@ public class MitycRubi extends AppCompatActivity implements
         OnMapReadyCallback,
         LocationListener {
 
-    private LocationRequest locRequest;
+    private LocationRequest mlocationRequest;
+    private LocationCallback mlocationCallback;
+
+    // El cliente que usaremos para detectar la posición gps.
+    private FusedLocationProviderClient mFusedLocationClient;
+
     private static Context contexto;
 
     private static final Logger log = Logger.getLogger(Constantes.class.getName());
     private static final int RESULT_COD_POB = 1;
     public static final Integer PETICION_CONFIG_UBICACION = 1024;
+    private static final int PERMISSION_REQUEST_LOCATION = 0;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -137,14 +141,12 @@ public class MitycRubi extends AppCompatActivity implements
      */
     private static TablaPrecios tp;
 
-    private ResponseReceiver mScrappingResponseReceiver;
-    private AddressResultReceiver mAddressResultReceiver;
-    private CoordenadasResultReceiver mLocationResultReceiver;
+    private ScrapWebMitycReceiver mScrappingScrapWebMitycReceiver;
+    private CityNameResultReceiverFromGeocoder mCityNameResultReceiverFromGeocoder;
+    private LocationPoblacionCentroResultReceiver mLocationPoblacionCentroResultReceiver;
     private Location mLastLocation;
     private GoogleApiClient mGoogleApiClient;
 
-    // la dirección reversa resultado
-    private static String mDireccionResultado;
     private ActionBarDrawerToggle mDrawerToggle;
     private GoogleMap googleMap;
 
@@ -154,7 +156,7 @@ public class MitycRubi extends AppCompatActivity implements
 
     // el resultreceier para cuando el usuario haga clic en una estación.
     // Cuenado se tenga la posición geografica de la estación, iniciará el mapa.
-    private static GeocoderLocationResultReceiver mGeocoderLocationResultReceiver;
+    private static LocationEstacionResultReceiverFromGeocoder mLocationEstacionResultReceiverFromGeocoder;
 
     // la barra de progreso que indica que está cargando los datos.
     private ProgressDialog progressBar;
@@ -181,8 +183,8 @@ public class MitycRubi extends AppCompatActivity implements
 
             // iniciamos servicio de coordenadas de otra población para no usar este hilo
             // al consultar las coordenadas via http.
-            mLocationResultReceiver = new CoordenadasResultReceiver(new Handler());
-            FetchLocationIntentService.startAction(this, mLocationResultReceiver, COD_LOC_DRAWERLIST);
+            mLocationPoblacionCentroResultReceiver = new LocationPoblacionCentroResultReceiver(new Handler(), this);
+            LocationPoblacionCentroIntentService.startAction(this, mLocationPoblacionCentroResultReceiver, COD_LOC_DRAWERLIST);
         }
 
     }
@@ -205,7 +207,8 @@ public class MitycRubi extends AppCompatActivity implements
      */
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        enableLocationUpdates();
+        if (permisosGps())
+            enableLocationUpdates();
     }
 
 
@@ -223,10 +226,11 @@ public class MitycRubi extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mityc_tab);
 
-        // contexto y mGeocoderLocationResultReceiver se inicializan aquí porque en otras
+        // contexto y mLocationEstacionResultReceiverFromGeocoder se inicializan aquí porque en otras
         // partes del código al ser static no lo permite.
         contexto = this;
-        mGeocoderLocationResultReceiver = new GeocoderLocationResultReceiver(new Handler());
+        mLocationEstacionResultReceiverFromGeocoder = new LocationEstacionResultReceiverFromGeocoder(new Handler(), this);
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         // recargamos los códigos de población.
         cargaCodigosPoblacion(this);
@@ -260,6 +264,18 @@ public class MitycRubi extends AppCompatActivity implements
 
         iconDrawer.setOnClickListener(mToggleDrawerButton);
 
+        /* especificamos que hacer cuando encuentra una localización */
+        mlocationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                for (Location location : locationResult.getLocations()) {
+                    // manejamos la primera que salga
+                    localizacionConseguida(location);
+                    break;
+                }
+            };
+        };
+
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
@@ -273,7 +289,7 @@ public class MitycRubi extends AppCompatActivity implements
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
-        mScrappingResponseReceiver = new ResponseReceiver();
+        mScrappingScrapWebMitycReceiver = new ScrapWebMitycReceiver(this);
 
         prepararDrawerList();
 
@@ -318,7 +334,7 @@ public class MitycRubi extends AppCompatActivity implements
     public void onDestroy() {
 
         try {
-            unregisterReceiver(mScrappingResponseReceiver);
+            unregisterReceiver(mScrappingScrapWebMitycReceiver);
         } catch (Exception e) {
             //Log.e("onPause", e.getMessage());
         }
@@ -345,7 +361,7 @@ public class MitycRubi extends AppCompatActivity implements
                 Constantes.BROADCAST_ACTION);
         // Registers the DownloadStateReceiver and its intent filters
         LocalBroadcastManager.getInstance(this).registerReceiver(
-                mScrappingResponseReceiver,
+                mScrappingScrapWebMitycReceiver,
                 mStatusIntentFilter);
     }
 
@@ -354,7 +370,7 @@ public class MitycRubi extends AppCompatActivity implements
     protected void onPause() {
 
         try {
-            unregisterReceiver(mScrappingResponseReceiver);
+            unregisterReceiver(mScrappingScrapWebMitycReceiver);
         } catch (Exception e) {
             //Log.e("onPause", e.getMessage());
         }
@@ -461,6 +477,117 @@ public class MitycRubi extends AppCompatActivity implements
         mGoogleApiClient.connect();
     }
 
+    /***** GETTERS Y SETTERS ****************/
+    /**
+     * devuelve LastLocation
+     * @return LastLocation
+     */
+    public Location getLastLocation() {
+        return mLastLocation;
+    }
+
+    /**
+     * devuelve tp
+     * @return tp
+     */
+    public TablaPrecios getTp() {
+        return tp;
+    }
+
+    public void setTp(TablaPrecios t) {
+        tp = t;
+    }
+
+    /**
+     * devuelve ViewPager
+     * @return ViewPager
+     */
+    public ViewPager getViewPager() {
+        return mViewPager;
+    }
+
+    /**
+     * devuelve estacionVer
+     * @return estacionVer
+     */
+    public Estacion getEstacionVer() {
+        return estacionVer;
+    }
+
+    public void setEstacionVer(Estacion e) {
+        estacionVer = e;
+    }
+
+    /**
+     * devuelve googleMap
+     * @return googleMap
+     */
+    public GoogleMap getGoogleMap() {
+        return googleMap;
+    }
+
+    /**
+     * devuelve progressBar
+     * @return progressBar
+     */
+    public ProgressDialog getProgressBar() {
+        return progressBar;
+    }
+
+    /********* FIN GETTERS Y SETTERS ************/
+
+
+    /********************************************
+     * Métodos para tratar permisos
+     */
+
+    /*
+     * Si hay permiso para acceder a Gps, devuelve verdadero, si no falso.
+     */
+    public boolean permisosGps() throws SecurityException {
+        Boolean perm = (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED);
+        // Si no tiene permisos, lo solicitamos y se recibirá el resultado de la solicitud en
+        // onRequestPermissionsResult().
+        if (!perm) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSION_REQUEST_LOCATION);
+        }
+        return perm;
+    }
+
+    /*
+     * Recibimos el resultado de la petición de permisos realizada en el anterior método.
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // Si el usuario concede permisos, comenzamos de nuevo
+                    // con enableLocationUpdates().
+                    enableLocationUpdates();
+
+                } else {
+
+                    // El usuario denegó los permisos
+                    Log.i(LOGTAG, "### MitycRubi:onRequestPermissionsResult-> el usuario" +
+                            "denegó los permisos.");
+                }
+                return;
+            }
+
+        }
+    }
+
+    /*
+     * FIN Métodos para tratar permisos
+     ********************************************/
 
     /*
         Cuando ya tenemos una localización sea por LastLocation o
@@ -469,19 +596,9 @@ public class MitycRubi extends AppCompatActivity implements
         LastLocation nos dará esa última localización, si no, la anterior.
      */
     private void localizacionConseguida(Location location) {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
+
+        if (!permisosGps()) return;
+
         //mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         mLastLocation = location;
 
@@ -503,8 +620,8 @@ public class MitycRubi extends AppCompatActivity implements
         mapFragment.getMapAsync(this);
 
         // iniciamos servicio de geolocalizacion.
-        mAddressResultReceiver = new AddressResultReceiver(new Handler());
-        new GeocoderHelper().fetchCityName(this, mAddressResultReceiver, mLastLocation);
+        mCityNameResultReceiverFromGeocoder = new CityNameResultReceiverFromGeocoder(new Handler(), this);
+        new GeocoderHelperConAsynctask().fetchCityNameFromLocation(this, mCityNameResultReceiverFromGeocoder, mLastLocation);
 
         disableLocationUpdates();
     }
@@ -515,46 +632,46 @@ public class MitycRubi extends AppCompatActivity implements
      */
     private void enableLocationUpdates() {
 
-        locRequest = new LocationRequest();
-        locRequest.setInterval(1000);
-        locRequest.setFastestInterval(500);
-        locRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+        mlocationRequest = new LocationRequest();
+        mlocationRequest.setInterval(1000);
+        mlocationRequest.setFastestInterval(500);
+        mlocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
 
-        LocationSettingsRequest locSettingsRequest =
-                new LocationSettingsRequest.Builder()
-                        .addLocationRequest(locRequest)
-                        .build();
+        LocationSettingsRequest.Builder locSettingsRequest = new LocationSettingsRequest.Builder()
+                        .addLocationRequest(mlocationRequest);
 
-        PendingResult<LocationSettingsResult> result =
-                LocationServices.SettingsApi.checkLocationSettings(
-                        mGoogleApiClient, locSettingsRequest);
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
 
-        result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
+        SettingsClient client = LocationServices.getSettingsClient(this);
+        Task<LocationSettingsResponse> task = client.checkLocationSettings(builder.build());
+
+        task.addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
             @Override
-            public void onResult(LocationSettingsResult locationSettingsResult) {
-                final Status status = locationSettingsResult.getStatus();
-                switch (status.getStatusCode()) {
-                    case LocationSettingsStatusCodes.SUCCESS:
+            public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+                Log.i(LOGTAG, "Configuración correcta");
+                startLocationUpdates();
+            }
+        });
 
-                        //Log.i(LOGTAG, "Configuración correcta");
-                        startLocationUpdates();
-                        break;
-
-                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                        try {
-                            //Log.i(LOGTAG, "Se requiere actuación del usuario");
-                            status.startResolutionForResult(MitycRubi.this, PETICION_CONFIG_UBICACION);
-                        } catch (IntentSender.SendIntentException e) {
-                            //Log.i(LOGTAG, "Error al intentar solucionar configuración de ubicación");
-                        }
-                        break;
-
-                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                        //Log.i(LOGTAG, "No se puede cumplir la configuración de ubicación necesaria");
-                        break;
+        task.addOnFailureListener(this, new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                if (e instanceof ResolvableApiException) {
+                    // Location settings are not satisfied, but this can be fixed
+                    // by showing the user a dialog.
+                    try {
+                        // Show the dialog by calling startResolutionForResult(),
+                        // and check the result in onActivityResult().
+                        ResolvableApiException resolvable = (ResolvableApiException) e;
+                        resolvable.startResolutionForResult(MitycRubi.this,
+                                PETICION_CONFIG_UBICACION);
+                    } catch (IntentSender.SendIntentException sendEx) {
+                        // Ignore the error.
+                    }
                 }
             }
         });
+
     }
 
 
@@ -564,24 +681,20 @@ public class MitycRubi extends AppCompatActivity implements
      */
     private void disableLocationUpdates() {
 
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        mFusedLocationClient.removeLocationUpdates(mlocationCallback);
 
     }
 
 
     private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            //Ojo: estamos suponiendo que ya tenemos concedido el permiso.
-            //Sería recomendable implementar la posible petición en caso de no tenerlo.
 
-            //Log.i(LOGTAG, "Inicio de recepción de ubicaciones");
-
-            LocationServices.FusedLocationApi.requestLocationUpdates(
-                    mGoogleApiClient, locRequest, MitycRubi.this);
+        try {
+            if (permisosGps())
+                mFusedLocationClient.requestLocationUpdates(mlocationRequest, mlocationCallback, null);
+        } catch (SecurityException se) {
+            Log.i(LOGTAG, "### MitycRub.startLocationUpdates() securityException");
         }
     }
-
 
     private void actualizar() {
         mostrarTituloBuscando(null);
@@ -590,25 +703,19 @@ public class MitycRubi extends AppCompatActivity implements
         if ((mGoogleApiClient != null) && (!mGoogleApiClient.isConnected())) {
             conectarApiGoogle();
         } else {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
+
+            try {
+                if (permisosGps()) {
+
+                    mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+
+                    // iniciamos servicio de geolocalizacion.
+                    mCityNameResultReceiverFromGeocoder = new CityNameResultReceiverFromGeocoder(new Handler(), this);
+                    new GeocoderHelperConAsynctask().fetchCityNameFromLocation(this, mCityNameResultReceiverFromGeocoder, mLastLocation);
+                }
+            } catch (SecurityException se) {
+                Log.i(LOGTAG,"### MitycRubi.actualizar SecurityException");
             }
-
-            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-
-            // iniciamos servicio de geolocalizacion.
-            mAddressResultReceiver = new AddressResultReceiver(new Handler());
-            new GeocoderHelper().fetchCityName(this, mAddressResultReceiver, mLastLocation);
         }
     }
 
@@ -899,33 +1006,6 @@ public class MitycRubi extends AppCompatActivity implements
     }
 
 
-
-    /*******************************************************************************
-     ************************** BroadCastReceiver que se activa cuando *************
-     ************************** ServicioScraptMityc.HandleEvent envía un aviso. ****
-     *******************************************************************************/
-
-    private class ResponseReceiver extends BroadcastReceiver {
-        // Called when the BroadcastReceiver gets an Intent it's registered to receive
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            tp = (TablaPrecios) intent.getSerializableExtra(Constantes.EXTENDED_DATA);
-
-            // detenemos la barra de progreso porque ya tenemos lo que buscabamos.
-            progressBar.dismiss();
-
-            try {
-                mViewPager.getAdapter().notifyDataSetChanged();
-            } catch (Exception e) {
-                // se produce al pulsar back button y volver a la aplicación.
-                e.printStackTrace();
-            }
-            mostrarTituloEncontrado(null);
-        }
-    }
-
-
     /*******************************************************************************
      ************************** A placeholder fragment containing a simple view ****
      *******************************************************************************/
@@ -934,13 +1014,13 @@ public class MitycRubi extends AppCompatActivity implements
          * The fragment argument representing the section number for this
          * fragment.
          */
-        private static final String ARG_SECTION_NUMBER = "section_number";
+        static final String ARG_SECTION_NUMBER = "section_number";
 //        private static Boolean concurriendo = false;
 
         // Como mapCallBack es non-static y dentro de este bloque sí es estático
         // creamos esta variable intermedia statica para poder manejar el map
         // cuando el usuario haga clic en una estación. Lo iniciamos en newInstance().
-        static OnMapReadyCallback omrc;
+        public static OnMapReadyCallback omrc;
 
         //private com.google.android.gms.maps.SupportMapFragment mapFragment = null;
 
@@ -1106,7 +1186,7 @@ public class MitycRubi extends AppCompatActivity implements
         private void clickEnEstacion(Estacion estacion) {
 
             // iniciamos servicio de geolocalizacion.
-            new GeocoderHelper().fetchLocation(getContext(), mGeocoderLocationResultReceiver, estacion);
+            new GeocoderHelperConAsynctask().fetchLocationFromEstacion(getContext(), mLocationEstacionResultReceiverFromGeocoder, estacion);
 
             // abrimos el Drawer
             mDrawerLayout.openDrawer(Gravity.LEFT);
@@ -1160,197 +1240,4 @@ public class MitycRubi extends AppCompatActivity implements
             return null;
         }
     }
-
-
-    /*******************************************************************************
-     ************************* La acción a realizar cuando GeocoderHelper
-     ************************* tiene los datos preparados con fetchLocation....
-     *******************************************************************************/
-    @SuppressLint("ParcelCreator")
-    class GeocoderLocationResultReceiver extends ResultReceiver {
-
-        public GeocoderLocationResultReceiver(Handler handler) {
-            super(handler);
-        }
-
-        @Override
-        protected void onReceiveResult(int resultCode, Bundle resultData) {
-
-            if (resultCode == Constantes.SUCCESS_RESULT) {
-
-                // obtenemos cordenadas de la estación previamente preparada con coordenadasResultReciever.
-                estacionVer = (Estacion) resultData.getSerializable(Constantes.RESULT_DATA_KEY);
-
-                // !! quizás esta parte debería llamarse desde GeocoderLocationResultReceiver
-                // !! porque mientras no tenemos la localización, no debería modificarse el mapa.
-
-                // una vez tenemos las coordenadas preparamos el mapa para que luego automaticamente
-                // se llame a onMapReady()
-                MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
-                mapFragment.getMapAsync(omrc);
-
-            }
-        }
-    }
-
-    /*******************************************************************************
-     ************************* La acción a realizar cuando GeocoderHelper
-     ************************* tiene los datos preparados con fetchCityName
-     *******************************************************************************/
-    @SuppressLint("ParcelCreator")
-    class AddressResultReceiver extends ResultReceiver {
-        public AddressResultReceiver(Handler handler) {
-            super(handler);
-        }
-
-        @Override
-        protected void onReceiveResult(int resultCode, Bundle resultData) {
-
-            // si falló la red al salir de suspend y Location devolvió null, lo intentamos
-            // una vez más.
-            if (resultCode == Constantes.FAILURE_RESULT) {
-                if (!COD_LOC_DRAWERLIST.isEmpty()) {
-                    ServicioScrapMityc.startActionScrap(getApplicationContext(), COD_LOC_DRAWERLIST);
-                } else {
-                    Toast.makeText(getApplicationContext(), "Problema conectando al servidor MITYC", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-
-                // Obtenemos el nombre de la población.
-                mDireccionResultado = resultData.getString(Constantes.RESULT_DATA_KEY);
-
-                if (mDireccionResultado != null) {
-
-                    Pattern p = Pattern.compile("^(.*)\\s([0-9]{5})$"); // "poblacion códigoPostal"
-                    //Pattern p = Pattern.compile("^(.*)([0-9]{5}) (.*), (.*),(.*)$");
-                    Matcher m = p.matcher(mDireccionResultado);
-
-                    if (m.matches()) {
-                        String cp = m.group(2);
-                        String poblacion = m.group(1);
-                        String cpprov = cp.substring(0, 2);
-                        mLastLocation.setProvider(poblacion); // trick
-                        if (cpprov.startsWith("0")) cpprov = cpprov.substring(1, 2);
-
-                        try {
-                            String codpob = buscarCodigoPoblacion(cpprov, poblacion);
-
-                            // Si COD_LOC_DRAWERLIST vacio -> primera vez que se utiliza la app
-                            // OR COD_LOC_DRAWERLIST=COD_LOCALIDAD AND !=codpob -> habíamos seleccionado
-                            // una población que ya descargamos o estamos en una población distinta a
-                            // la anterior.
-                            if ((COD_LOC_DRAWERLIST.isEmpty())
-                                    || ((COD_LOC_DRAWERLIST.equals(COD_LOCALIDAD))
-                                            && (!COD_LOCALIDAD.equals(codpob)))) {
-                                COD_LOC_DRAWERLIST = codpob;
-                            }
-
-                            mostrarTituloBuscando(buscarCodigoAPoblacion(COD_LOC_DRAWERLIST));
-                            tp.recuperaCache(COD_LOC_DRAWERLIST, getApplicationContext());
-
-                            // una vez tenemos las coordenadas preparamos el mapa para que luego automaticamente
-                            // se llame a onMapReady()
-                            MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
-                            mapFragment.getMapAsync(mapCallBack);
-
-                            // ponemos en COD_LOCALIDAD la población recién detectada
-                            // COD_LOC_DRAWERLIST mantendrá la que se hubiera seleccionado en la lista
-                            COD_LOCALIDAD = codpob;
-
-                            Toolbar t = (Toolbar) findViewById(R.id.toolbar);
-                            setSupportActionBar(t);
-                            mViewPager.getAdapter().notifyDataSetChanged();
-
-                            SharedPreferences.Editor editor = getApplicationContext().getSharedPreferences(Constantes.SHARED_PREFS_FILE, 0).edit();
-                            editor.putString(Constantes.SHARED_PREFS_ULTIMA_LOCALIDAD, COD_LOC_DRAWERLIST);
-                            editor.commit();
-
-                            // aunque grabamos en SharedPreferences la Localidad actual, no descargamos
-                            // los datos de esta sino de COD_LOC_DRAWERLIST (la que el usuario hubiera
-                            // seleccionado)
-                            ServicioScrapMityc.startActionScrap(getApplicationContext(), COD_LOC_DRAWERLIST);
-                        } catch (RegistroNoExistente rne) {
-                            //log.log(Level.ALL, rne.getMessage());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-    /*********************************************************************************
-     ************************** La acción a realizar cuando FetchLocationIntentService
-     ************************** tiene los datos preparados. (map listo) **************
-     *********************************************************************************/
-    @SuppressLint("ParcelCreator")
-    class CoordenadasResultReceiver extends ResultReceiver {
-        public CoordenadasResultReceiver(Handler handler) {
-            super(handler);
-        }
-
-        @Override
-        protected void onReceiveResult(int resultCode, Bundle resultData) {
-            Location mAnotherLocation = mLastLocation;
-            CameraUpdate cameraUpdate;
-
-            if (estacionVer == null) {
-
-                // si necesitamos el mapa de una localidad distinta a la que estamos actualmente ...
-                if (((!COD_LOC_DRAWERLIST.equals(COD_LOCALIDAD)) && (resultCode == Constantes.SUCCESS_RESULT))) {
-                    mAnotherLocation = (Location) resultData.getParcelable("location");
-                }
-
-                // si no conseguimos una localización precisa retornamos sin hacer nada.
-                if (mAnotherLocation == null)
-                    return;
-
-                // Si habíamos guardado de Provider el nombre de la población obtenido con GeoCodeHelper
-                if (!mAnotherLocation.getProvider().equals("fused")) {
-                    mostrarTituloBuscando(mAnotherLocation.getProvider());
-                    preparaListaMenuDrawer();
-                }
-                googleMap.addMarker(new MarkerOptions()
-                        .position(new LatLng(mAnotherLocation.getLatitude(), mAnotherLocation.getLongitude()))
-                        .title(mLastLocation.getProvider())); //buscarCodigoAPoblacion(COD_LOC_DRAWERLIST)));
-                cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                        new LatLng(mAnotherLocation.getLatitude(), mAnotherLocation.getLongitude()), 12);
-            } else {
-                googleMap.addMarker(new MarkerOptions()
-                        .position(new LatLng(estacionVer.getLocation().getLatitude(), estacionVer.getLocation().getLongitude()))
-                        .title(estacionVer.getNombre())).showInfoWindow();
-                cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                        new LatLng(estacionVer.getLocation().getLatitude(), estacionVer.getLocation().getLongitude()), 16);
-                estacionVer = null;  // vuelve a ser null hasta que el usuario vuelva a hacer click en una estación.
-            }
-
-            // Gets to GoogleMap from the MapView and does initialization stuff
-            googleMap.getUiSettings().setMyLocationButtonEnabled(false);
-            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
-            }
-            googleMap.setMyLocationEnabled(false);
-
-            // Needs to call MapsInitializer before doing any CameraUpdateFactory calls
-            try {
-                MapsInitializer.initialize(getApplicationContext());
-                // Updates the location and zoom of the MapView
-                googleMap.moveCamera(cameraUpdate);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
 }

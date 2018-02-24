@@ -13,6 +13,8 @@ import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
 
+import com.corral.mityc.excepciones.RegistroNoExistente;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

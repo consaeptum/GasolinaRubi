@@ -1,9 +1,12 @@
-package com.corral.mityc;
+package com.corral.mityc.servicios;
 
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
+
+import com.corral.mityc.Constantes;
+import com.corral.mityc.TablaPrecios;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -12,14 +15,14 @@ import android.support.v4.content.LocalBroadcastManager;
  * TODO: Customize class - update intent actions, extra parameters and static
  * helper methods.
  */
-public class ServicioScrapMityc extends IntentService {
+public class ScrapWebMitycIntentService extends IntentService {
     // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
 
     private Intent mitycIntent;
     private TablaPrecios tp = new TablaPrecios(this);
 
-    public ServicioScrapMityc() {
-        super("ServicioScrapMityc");
+    public ScrapWebMitycIntentService() {
+        super("ScrapWebMitycIntentService");
     }
 
     /**
@@ -31,7 +34,7 @@ public class ServicioScrapMityc extends IntentService {
     // TODO: Customize helper method
     public static void startActionScrap(Context context, String cod_localidad) {
 
-        Intent intent = new Intent(context, ServicioScrapMityc.class);
+        Intent intent = new Intent(context, ScrapWebMitycIntentService.class);
         intent.setAction(Constantes.ACTION_SCRAP);
         intent.putExtra(Constantes.PARAMETRO_COD_LOCALIDAD, cod_localidad);
         context.startService(intent);

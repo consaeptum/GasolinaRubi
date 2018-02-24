@@ -4,6 +4,9 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.location.Location;
 
+import com.corral.mityc.excepciones.FalloConexion;
+import com.corral.mityc.excepciones.RegistroNoExistente;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -404,36 +407,3 @@ public class Parseo {
 }
 
 
-class CSVFile {
-    InputStream inputStream;
-    String separador;
-
-    public CSVFile(InputStream inputStream, String s){
-        this.inputStream = inputStream;
-        this.separador = s;
-    }
-
-    public List read(){
-        List resultList = new ArrayList();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        try {
-            String csvLine;
-            while ((csvLine = reader.readLine()) != null) {
-                String[] row = csvLine.split(separador);
-                resultList.add(row);
-            }
-        }
-        catch (IOException ex) {
-            throw new RuntimeException("Error in reading CSV file: "+ex);
-        }
-        finally {
-            try {
-                inputStream.close();
-            }
-            catch (IOException e) {
-                throw new RuntimeException("Error while closing input stream: "+e);
-            }
-        }
-        return resultList;
-    }
-}

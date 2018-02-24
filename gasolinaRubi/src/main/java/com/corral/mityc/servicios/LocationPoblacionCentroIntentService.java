@@ -1,4 +1,4 @@
-package com.corral.mityc;
+package com.corral.mityc.servicios;
 
 import android.app.IntentService;
 import android.content.Context;
@@ -7,19 +7,25 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 
+import com.corral.mityc.Constantes;
+import com.corral.mityc.excepciones.FalloConexion;
+import com.corral.mityc.receptores.LocationPoblacionCentroResultReceiver;
+import com.corral.mityc.Parseo;
+import com.corral.mityc.excepciones.RegistroNoExistente;
+
 /**
- * An {@link IntentService} subclass for handling asynchronous task requests in
- * a service on a separate handler thread.
- * <p/>
- * TODO: Customize class - update intent actions, extra parameters and static
- * helper methods.
+ * En el mapa, mostramos el puntero a la población en general en el caso de que no estemos apuntando
+ * a una Estación en concreto.
+ * Este IntentService se encarga de buscar las coordenadas de la población indicada y devolviendo
+ * el resultado a un ResultReceiver que se debe indicar al inicial el servicio.
+ *
  */
-public class FetchLocationIntentService extends IntentService {
+public class LocationPoblacionCentroIntentService extends IntentService {
 
     protected static ResultReceiver mReceiver;
 
-    public FetchLocationIntentService() {
-        super("FetchLocationIntentService");
+    public LocationPoblacionCentroIntentService() {
+        super("LocationPoblacionCentroIntentService");
     }
 
     /**
@@ -29,10 +35,10 @@ public class FetchLocationIntentService extends IntentService {
      * @see IntentService
      */
     // TODO: Customize helper method
-    public static void startAction(Context context, MitycRubi.CoordenadasResultReceiver mResultReceiver, String mPoblacion) {
+    public static void startAction(Context context, LocationPoblacionCentroResultReceiver mResultReceiver, String mPoblacion) {
 
         mReceiver = mResultReceiver;
-        Intent intent = new Intent(context, FetchLocationIntentService.class);
+        Intent intent = new Intent(context, LocationPoblacionCentroIntentService.class);
         intent.putExtra(Constantes.RECEIVER, mResultReceiver);
         intent.putExtra(Constantes.LOCATION_DATA_EXTRA, mPoblacion);
         context.startService(intent);

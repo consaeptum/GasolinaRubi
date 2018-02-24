@@ -1,4 +1,4 @@
-package com.corral.mityc;
+package com.corral.mityc.excepciones;
 
 /**
  * Created by javier on 18/07/16.

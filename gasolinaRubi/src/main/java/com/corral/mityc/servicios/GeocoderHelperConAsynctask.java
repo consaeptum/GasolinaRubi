@@ -1,4 +1,4 @@
-package com.corral.mityc;
+package com.corral.mityc.servicios;
 
 import android.content.Context;
 import android.location.Address;
@@ -8,6 +8,10 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.util.Log;
+
+import com.corral.mityc.Constantes;
+import com.corral.mityc.Parseo;
+import com.corral.mityc.estaciones.Estacion;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,23 +28,25 @@ import java.util.regex.Pattern;
 
 
 /*
-    Lo usamos para obtener la población que detectamos
+    Lo usamos para obtener la población según las coordenadas con fetchCityNameFromLocation() o
+    para obtener las coordenadas de una Estación con fetchLocationFromEstacion().
+    Devuelve el resultado a un ResultReceiver que se le debe indicar.
 
  Usage:
-    new GeocoderHelper().fetchCityName(context, location);
+    new GeocoderHelperConAsynctask().fetchCityNameFromLocation(context, location);
     Then do somthing in onPostExecute() of example code
     (send broadcast, invoke listener method, set a textView text, whatever)
  */
-public class GeocoderHelper
+public class GeocoderHelperConAsynctask
 {
-    //private static final AndroidHttpClient ANDROID_HTTP_CLIENT = AndroidHttpClient.newInstance(GeocoderHelper.class.getName());
+    //private static final AndroidHttpClient ANDROID_HTTP_CLIENT = AndroidHttpClient.newInstance(GeocoderHelperConAsynctask.class.getName());
 
     private boolean running = false;
 
     // inyectaremos el receiver al que enviar la respuesta cuando tengamos el resultado
     protected static ResultReceiver mReceiver;
 
-    public void fetchCityName(final Context contex, ResultReceiver rr, final Location location)
+    public void fetchCityNameFromLocation(final Context contex, ResultReceiver rr, final Location location)
     {
         // guardamos el Receiver para enviar el resultado en onPostExecute()
         mReceiver = rr;
@@ -195,7 +201,7 @@ public class GeocoderHelper
                 if (cityName != null)
                 {
                     // Do something with cityName
-                    Log.i("GeocoderHelper", cityName);
+                    Log.i("GeocoderHelperConAsynctask", cityName);
 
                     Bundle bundle = new Bundle();
                     bundle.putString(Constantes.RESULT_DATA_KEY, cityName);
@@ -205,11 +211,11 @@ public class GeocoderHelper
                     bundle.putString(Constantes.RESULT_DATA_KEY, cityName);
                     mReceiver.send(Constantes.FAILURE_RESULT, bundle);
                 }
-            };
+            }
         }.execute();
     }
 
-    public void fetchLocation(final Context contex, ResultReceiver rr, final Estacion estacion)
+    public void fetchLocationFromEstacion(final Context contex, ResultReceiver rr, final Estacion estacion)
     {
         // guardamos el Receiver para enviar el resultado en onPostExecute()
         mReceiver = rr;
@@ -340,7 +346,7 @@ public class GeocoderHelper
                 if (loc != null)
                 {
                     // Do something with cityName
-                    Log.i("GeocoderHelper", loc.toString());
+                    Log.i("GeocoderHelperConAsynctask", loc.toString());
 
                     Bundle bundle = new Bundle();
                     bundle.putSerializable(Constantes.RESULT_DATA_KEY, estacion);

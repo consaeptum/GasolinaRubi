@@ -70,8 +70,54 @@
                 - Solución: Se vuelve a bloquear swipeLeft y ponemmos un botón en el drawer superior
                             para cerrar el drawer.
 
+____________________________________________________________________________________________________
 
-15/ago/17   [ ] Algunas direcciones de Estaciones no las reconoce bien y muestra en el mapa
+15/ago/17   [!] Algunas direcciones de Estaciones no las reconoce bien y muestra en el mapa
                 poblaciones de otros países.
                 GeocoderHelper.fetchLocationUsingGooglemap()
+
+27/ago/17   [ ] Reformaremos la totalidad del código para utilizar únicamente los documentos Json
+                que ofrece Mityc:
+
+                - Lista de provincias y sus códigos:
+                    https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/Provincias/
+
+                - Lista de municipios por provincia:
+                    https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/MunicipiosPorProvincia/{provincia}
+
+                - Lista de estaciones por población:
+                    https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroMunicipio/{cod}
+
+                Pondremos cada Receiver y cada tarea asíncrono en un archivo .java independiente para
+                aumentar la claridad del código.  También lo renombraremos para clarificar el uso
+                que se le dé.
+
+                El código para leer Servicios Web Json:
+
+                    Se podría guardar el archivo poblaciones.csv con los nombres de población sin
+                    modificar tal como vienen en el Servicio Rest.  Se podría obtener con Python.
+                    Ya no sería necesario los códigos según JavaScript (scraping) y tampoco sería
+                    necesario procesar nombres de poblaciones porque sería exactamente iguales que
+                    en el servicio Rest.
+                    El servicio Rest nos ofrecería por cada estación la latitud/longitud.
+
+                    WebServiceJsonGetEstacionesPorPoblacion
+                    ResultReceiverEstacionesPorPoblacion
+
+
+11/set/17   [X] Movemos AddressResultReceiver a una clase independiente dentro de com.corral.mityc
+                y lo llamamos CityNameResultReceiverFromGeocoder.java.
+
+11/set/17   [X] Movemos CoordenadasResultReceiver a una clase independiente dentro de com.corral.mityc
+                y lo llamamos LocationPoblacionCentroResultReceiver.java.
+                También cambiamos de nombre FetchLocationIntentService a LocationPoblacionCentroIntentService.
+
+11/set/17   [X] Cambiamos el nombre de ServicioScrapMityc a ScrapWebMitycIntentService y movemos
+                ResponseReceiver a una clase independiente y la llamamos ScrapWebMitycReceiver.
+
+11/set/17   [X] falta mover fuera de MitycRubi GeocoderLocationResultReceiver y cambiarle el nombre
+                a LocationEstacionResultReceiver.
+                También estaría bien crear paquetes para diferenciar clases Estacion,Producto,etcc
+                MitycRubi, etc.
+
 
