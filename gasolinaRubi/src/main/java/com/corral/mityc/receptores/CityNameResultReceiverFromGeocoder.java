@@ -13,6 +13,7 @@ import com.corral.mityc.MitycRubi;
 import com.corral.mityc.R;
 import com.corral.mityc.excepciones.RegistroNoExistente;
 import com.corral.mityc.servicios.ScrapWebMitycIntentService;
+import com.corral.mityc.servicios.WSJsonGetMunicipiosPorProvincia;
 import com.google.android.gms.maps.MapFragment;
 
 import java.util.regex.Matcher;
@@ -53,7 +54,7 @@ public class CityNameResultReceiverFromGeocoder extends ResultReceiver {
             }
         } else {
 
-            // Obtenemos el nombre de la población.
+            // Obtenemos el nombre de la población y código postal y provincia.
             mDireccionResultado = resultData.getString(Constantes.RESULT_DATA_KEY);
 
             if (mDireccionResultado != null) {
@@ -102,10 +103,15 @@ public class CityNameResultReceiverFromGeocoder extends ResultReceiver {
                         editor.putString(Constantes.SHARED_PREFS_ULTIMA_LOCALIDAD, COD_LOC_DRAWERLIST);
                         editor.commit();
 
+// Esta parte deberá quitarse y sustituirla por una llamada a WSJsonGetEstacionesPorPoblacionConAsynctask
+// ya que en este punto llamaremos a WSJsonGetMunicipiosPorProvincia y le pasaremos el
+// código de provincia y la población.  El receptor correspondiente llamará a WSJsonGetEstacionesPorPoblación
+
                         // aunque grabamos en SharedPreferences la Localidad actual, no descargamos
                         // los datos de esta sino de COD_LOC_DRAWERLIST (la que el usuario hubiera
                         // seleccionado)
-                        ScrapWebMitycIntentService.startActionScrap(mitycRubi.getApplicationContext(), COD_LOC_DRAWERLIST);
+//                        ScrapWebMitycIntentService.startActionScrap(mitycRubi.getApplicationContext(), COD_LOC_DRAWERLIST);
+WSJsonGetMunicipiosPorProvincia.obtenMunicipios()
                     } catch (RegistroNoExistente rne) {
                         //log.log(Level.ALL, rne.getMessage());
                     }
