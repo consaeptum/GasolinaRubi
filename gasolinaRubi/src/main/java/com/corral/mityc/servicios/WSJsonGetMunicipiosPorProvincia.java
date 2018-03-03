@@ -1,9 +1,13 @@
 package com.corral.mityc.servicios;
 
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.util.Log;
 
+import com.corral.mityc.Constantes;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
@@ -12,6 +16,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.util.HashMap;
 
 /**
  * Created by javier on 27/02/18.
@@ -33,11 +38,11 @@ public class WSJsonGetMunicipiosPorProvincia {
     protected static ResultReceiver mResultReceiver;
 
 
-    public static void obtenMunicipio(ResultReceiver rr, final String cpprov, String poblacion) {
+    public static void obtenMunicipio(ResultReceiver rr, final String cpprov, final String poblacion) {
 
         // guardamos el Receiver para enviar el resultado en onPostExecute()
         mResultReceiver = rr;
--
+
         if (running) return;
 
         new AsyncTask<String, Void, String>() {
@@ -47,20 +52,22 @@ public class WSJsonGetMunicipiosPorProvincia {
             }
 
             protected void onPostExecute(String result) {
-                try {
-                    JSONObject jsonObject = new JSONObject(result);
-                    JSONObject weatherObservationItems = new JSONObject(jsonObject.getString("weatherObservation"));
+                HashMap<String, String> codMitycPobs = cargaMunicipios(result);
+                String codigoMityc = buscaPoblacion(codMitycPobs, poblacion);
 
-                    System.out.println(weatherObservationItems.getString("clouds")
-                            + " - "
-                            + weatherObservationItems.getString("stationName"));
-                } catch (Exception e) {
-                    Log.d("ReadWeatherJSONFeedTask", e.getLocalizedMessage());
+                if (result != null) {
+                    Bundle bundle = new Bundle();
+                    bundle.putString(Constantes.RESULT_DATA_KEY, result);
+                    mResultReceiver.send(Constantes.SUCCESS_RESULT, bundle);
+                } else {
+                    Bundle bundle = new Bundle();
+                    bundle.putString(Constantes.RESULT_DATA_KEY, result);
+                    mResultReceiver.send(Constantes.FAILURE_RESULT, bundle);
                 }
             }
 
 
-            /**
+            /*
              * [{
              *   "IDMunicipio":"Contenido de la cadena",
              *           "IDProvincia":"Contenido de la cadena",
@@ -87,13 +94,43 @@ public class WSJsonGetMunicipiosPorProvincia {
                     System.out.println(response);
 
                 } catch (java.net.MalformedURLException e){
-                    e.printStackTrace();
+                    return null;
                 } catch (ProtocolException e) {
-                    e.printStackTrace();
+                    return null;
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    return null;
                 }
                 return response;
+            }
+
+            /*
+             * Carga la lista de Municipios para el código de provincia dado y lo devuelve
+             * en un HashMap<codigo_poblacion_de_mityc, nombre_población>
+             */
+            HashMap<String, String> cargaMunicipios(String result) {
+
+                HashMap<String, String> hm = new HashMap<String, String>();
+
+                try {
+                    JSONArray jsonArray = new JSONArray(result);
+
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject value=jsonArray.getJSONObject(i);
+                        hm.put(value.getString("IDMunicipio"), value.getString("Municipio"));
+                        Log.e("json", i+"="+value);
+                    }
+
+                } catch (Exception e) {
+                    return null;
+                }
+                return hm;
+            }
+
+            /*
+             * Buscamos la población dada entre la lista del HashMap<codigo, poblacion>
+             */
+            String buscaPoblacion(HashMap<String, String> hm, String poblacion) {
+
             }
         }.execute();
     }
