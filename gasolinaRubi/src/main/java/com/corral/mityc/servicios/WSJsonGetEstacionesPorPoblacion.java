@@ -20,7 +20,7 @@ import java.net.URL;
  * correspondiente cuando esté listo.
  */
 
-public class WSJsonGetEstacionesPorPoblacionConAsyncTask {
+public class WSJsonGetEstacionesPorPoblacion {
 
     private boolean running = false;
     static private String urlWSProvincias =
@@ -30,7 +30,7 @@ public class WSJsonGetEstacionesPorPoblacionConAsyncTask {
     protected static ResultReceiver mResultReceiver;
 
 
-    public void obtenProvincias(ResultReceiver rr) {
+    public void obtenEstaciones(ResultReceiver rr) {
 
         // guardamos el Receiver para enviar el resultado en onPostExecute()
         mResultReceiver = rr;

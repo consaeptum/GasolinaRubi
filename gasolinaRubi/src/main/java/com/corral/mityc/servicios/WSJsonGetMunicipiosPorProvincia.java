@@ -24,7 +24,7 @@ import java.net.URL;
 
 public class WSJsonGetMunicipiosPorProvincia {
 
-    private boolean running = false;
+    private static boolean running = false;
     static private String urlWSProvincias =
             "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/MunicipiosPorProvincia/";
 
@@ -33,11 +33,11 @@ public class WSJsonGetMunicipiosPorProvincia {
     protected static ResultReceiver mResultReceiver;
 
 
-    public void obtenMunicipios(ResultReceiver rr) {
+    public static void obtenMunicipio(ResultReceiver rr, final String cpprov, String poblacion) {
 
         // guardamos el Receiver para enviar el resultado en onPostExecute()
         mResultReceiver = rr;
-
+-
         if (running) return;
 
         new AsyncTask<String, Void, String>() {
@@ -59,11 +59,22 @@ public class WSJsonGetMunicipiosPorProvincia {
                 }
             }
 
+
+            /**
+             * [{
+             *   "IDMunicipio":"Contenido de la cadena",
+             *           "IDProvincia":"Contenido de la cadena",
+             *           "IDCCAA":"Contenido de la cadena",
+             *           "Municipio":"Contenido de la cadena",
+             *           "Provincia":"Contenido de la cadena",
+             *           "CCAA":"Contenido de la cadena"
+             * }]
+            */
             String readJSONFeed() {
 
                 String response = "";
                 try {
-                    URL url = new URL(urlWSProvincias);
+                    URL url = new URL(urlWSProvincias.concat(cpprov));
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
 

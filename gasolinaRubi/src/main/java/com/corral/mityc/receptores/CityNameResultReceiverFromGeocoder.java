@@ -54,6 +54,8 @@ public class CityNameResultReceiverFromGeocoder extends ResultReceiver {
             }
         } else {
 
+            String cpprov = "";
+
             // Obtenemos el nombre de la población y código postal y provincia.
             mDireccionResultado = resultData.getString(Constantes.RESULT_DATA_KEY);
 
@@ -66,7 +68,7 @@ public class CityNameResultReceiverFromGeocoder extends ResultReceiver {
                 if (m.matches()) {
                     String cp = m.group(2);
                     String poblacion = m.group(1);
-                    String cpprov = cp.substring(0, 2);
+                    cpprov = cp.substring(0, 2);
                     mitycRubi.getLastLocation().setProvider(poblacion); // trick
                     if (cpprov.startsWith("0")) cpprov = cpprov.substring(1, 2);
 
@@ -110,8 +112,12 @@ public class CityNameResultReceiverFromGeocoder extends ResultReceiver {
                         // aunque grabamos en SharedPreferences la Localidad actual, no descargamos
                         // los datos de esta sino de COD_LOC_DRAWERLIST (la que el usuario hubiera
                         // seleccionado)
-//                        ScrapWebMitycIntentService.startActionScrap(mitycRubi.getApplicationContext(), COD_LOC_DRAWERLIST);
-WSJsonGetMunicipiosPorProvincia.obtenMunicipios()
+
+//ScrapWebMitycIntentService.startActionScrap(mitycRubi.getApplicationContext(), COD_LOC_DRAWERLIST);
+MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia mxp =
+        new MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia(new Handler());
+WSJsonGetMunicipiosPorProvincia.obtenMunicipio(mxp, cpprov, poblacion);
+
                     } catch (RegistroNoExistente rne) {
                         //log.log(Level.ALL, rne.getMessage());
                     }
