@@ -217,6 +217,47 @@ public class Parseo {
     }
 
 
+    /**
+     * Obtenemos el código de la población a partir de los parámetros
+     * codProvincia y población.
+     * @param hm La lista de codigos y poblaciones mityc
+     * @param poblacion
+     * @return Devuelve el código de la población como String de dígitos numéricos
+     * o null si no la encuentra.
+     */
+    public static String buscarCodigoPoblacionMityc(HashMap<String, String> hm, String poblacion)
+            throws RegistroNoExistente {
+        String[] poblSplited = poblacion.split(" ");
+        String codPoblacion = "";
+        // Map<codigo_poblacion, numero_coincidencias>
+        Map<String, Integer> coincidencias = new HashMap<String, Integer>();
+
+        // recorremos los elementos del array con igual codProvincia
+        for (String cod: hm.keySet()) {
+            String toponimioMityc = hm.get(cod);
+            String[] pobOrigen = toponimioMityc.split(" ");
+            // recorrer las palabras de una poblacion de la lista.
+            for (String o : pobOrigen) {
+                //
+                // para cada palabra de poblacion a buscar comparamos con o
+                for (String b : poblSplited) {
+                    //
+                    if (sinAcentos(b).equalsIgnoreCase(sinAcentos(o))) {
+                        //
+                        if (!coincidencias.containsKey(toponimioMityc)) {
+                            coincidencias.put(toponimioMityc, 1);
+                        } else {
+                            coincidencias.put(toponimioMityc, coincidencias.get(toponimioMityc) + 1);
+                        }
+                    }
+                }
+            }
+        }
+        // finalizamos con HashMap coincidencias conteniendo los resultados.
+        // si hay un solo resultado con valor máximo, correcto..
+        return codResultTablaCoincidencias(coincidencias, poblacion);
+    }
+
     /*
      * Analiza la tabla de coincidencias y devuelve el código que tiene más coincidencias
      *
@@ -403,6 +444,30 @@ public class Parseo {
         s = s.replace('/', ' ');
         s = s.trim();
         return s.replaceAll("[\\p{InCombiningDiacriticalMarks}]", "");
+    }
+
+    public static String quitarPreposiciones(String as) {
+        String patronPreposiciones =
+                "((^|\\s)EL($|\\s))|" +
+                        "((^|\\s)LOS($|\\s))|" +
+                        "((^|\\s)LA($|\\s))|" +
+                        "((^|\\s)LAS($|\\s))|" +
+                        "((^|\\s)O($|\\s))|" +
+                        "((^|\\s)DO($|\\s))|" +
+                        "((^|\\s)DAS($|\\s))|" +
+                        "((^|\\s)A($|\\s))|" +
+                        "((^|\\s)AS($|\\s))|" +
+                        "((^|\\s)EN($|\\s))|" +
+                        "((^|\\s)DE($|\\s))|" +
+                        "((^|\\s)DEL($|\\s))|" +
+                        "((^|\\s)DELS($|\\s))|" +
+                        "((^|\\s)LES($|\\s))|" +
+                        "((^|\\s)ELS($|\\s))|" +
+                        "((^|\\s)L'($|\\s))|" +
+                        "((^|\\s)N'($|\\s))|" +
+                        "((^|\\s)D'($|\\s))";
+        String sinPreps = as.toUpperCase().replaceAll(patronPreposiciones, "");
+        return sinPreps;
     }
 }
 

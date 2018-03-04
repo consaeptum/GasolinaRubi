@@ -6,6 +6,8 @@ import android.os.ResultReceiver;
 import android.util.Log;
 
 import com.corral.mityc.Constantes;
+import com.corral.mityc.Parseo;
+import com.corral.mityc.excepciones.RegistroNoExistente;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -131,6 +133,25 @@ public class WSJsonGetMunicipiosPorProvincia {
              */
             String buscaPoblacion(HashMap<String, String> hm, String poblacion) {
 
+                String pobABuscar = Parseo.sinAcentos(poblacion);
+                pobABuscar = Parseo.quitarPreposiciones(pobABuscar);
+
+                // transformamos a mayusculas y quitamos acentos y artículos a cada población de mityc.
+                for (String codigoMityc: hm.keySet()) {
+                    String pobMityc = Parseo.sinAcentos(hm.get(codigoMityc));
+                    pobMityc = Parseo.quitarPreposiciones(pobMityc);
+                    hm.put(codigoMityc, pobMityc);
+                }
+
+                // tenemos la lista de mityc (codigo, poblacion) en mayusculas, sin acentos ni
+                // preposiciones o articulos.  También pobABuscar.
+                String codigo;
+                try {
+                    codigo = Parseo.buscarCodigoPoblacionMityc(hm, pobABuscar);
+                } catch (RegistroNoExistente rne) {
+                    codigo = null;
+                }
+                return codigo;
             }
         }.execute();
     }
