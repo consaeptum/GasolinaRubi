@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.ResultReceiver;
 
 import com.corral.mityc.Constantes;
+import com.corral.mityc.MitycRubi;
 import com.corral.mityc.servicios.WSJsonGetEstacionesPorPoblacion;
 
 /*
@@ -15,8 +16,11 @@ import com.corral.mityc.servicios.WSJsonGetEstacionesPorPoblacion;
 @SuppressLint("ParcelCreator")
 public class MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia extends ResultReceiver {
 
-    public MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia(Handler handler) {
+    private MitycRubi mMitycRubi;
+
+    public MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia(Handler handler, MitycRubi mr) {
         super(handler);
+        mMitycRubi = mr;
     }
 
     @Override
@@ -34,7 +38,9 @@ public class MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia extends
                 // de estaciones de Mityc.
 
                 WSJsonGetEstacionesPorPoblacion mWSJE = new WSJsonGetEstacionesPorPoblacion();
-                mWSJE.obtenEstaciones();
+                EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion eRRfWSExP =
+                        new EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion(new Handler(), mMitycRubi);
+                mWSJE.obtenEstaciones(eRRfWSExP, mMitycRubi, mCodigoMitycPoblacionResultado);
             }
         }
     }

@@ -6,7 +6,7 @@ import android.os.Handler;
 import android.os.ResultReceiver;
 
 import com.corral.mityc.Constantes;
-import com.corral.mityc.servicios.WSJsonGetEstacionesPorPoblacion;
+import com.corral.mityc.MitycRubi;
 
 /*
  * La acción a realizar cuando WSJsonGetMunicipiosPorProvincia
@@ -15,26 +15,40 @@ import com.corral.mityc.servicios.WSJsonGetEstacionesPorPoblacion;
 @SuppressLint("ParcelCreator")
 public class EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion extends ResultReceiver {
 
-    public EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion(Handler handler) {
+    private MitycRubi mMitycRubi;
+
+    public EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion(Handler handler, MitycRubi mr) {
         super(handler);
+        mMitycRubi = mr;
     }
 
     @Override
     protected void onReceiveResult(int resultCode, Bundle resultData) {
 
-        String mCodigoMitycPoblacionResultado = null;
+        String mJSonEstacionesResult = null;
 
         if (resultCode == Constantes.SUCCESS_RESULT) {
-            mCodigoMitycPoblacionResultado = resultData.getString(Constantes.RESULT_DATA_KEY);
+            mJSonEstacionesResult = resultData.getString(Constantes.RESULT_DATA_KEY);
 
-            // acción a realizar cuando ya tenemos el código de la población de mityc
-            if (mCodigoMitycPoblacionResultado != null) {
+            // acción a realizar cuando ya tenemos Las estaciones
+            if (mJSonEstacionesResult != null) {
 
-                // utilizamos WSJsonGetEstacionesPorPoblacion para obtener la lista
-                // de estaciones de Mityc.
+                //if (!mMitycRubi.getTp().realizarPeticionJSON(mJSonEstacionesResult)) tp.recuperaCache(cod_loc, this);
+                //mMitycRubi.setTp((TablaPrecios) intent.getSerializableExtra(Constantes.EXTENDED_DATA));
 
-                WSJsonGetEstacionesPorPoblacion mWSJE = new WSJsonGetEstacionesPorPoblacion();
-                mWSJE.obtenEstaciones();
+                mMitycRubi.getTp().realizarPeticionJSON(mJSonEstacionesResult);
+
+                // detenemos la barra de progreso porque ya tenemos lo que buscabamos.
+                mMitycRubi.getProgressBar().dismiss();
+
+                try {
+                    mMitycRubi.getViewPager().getAdapter().notifyDataSetChanged();
+                } catch (Exception e) {
+                    // se produce al pulsar back button y volver a la aplicación.
+                    e.printStackTrace();
+                }
+                mMitycRubi.mostrarTituloEncontrado(null);
+
             }
         }
     }

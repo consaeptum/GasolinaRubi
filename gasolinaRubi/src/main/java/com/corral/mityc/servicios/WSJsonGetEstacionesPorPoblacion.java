@@ -1,10 +1,11 @@
 package com.corral.mityc.servicios;
 
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.util.Log;
 
-import org.json.JSONObject;
+import com.corral.mityc.Constantes;
+import com.corral.mityc.MitycRubi;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -23,17 +24,24 @@ import java.net.URL;
 public class WSJsonGetEstacionesPorPoblacion {
 
     private boolean running = false;
-    static private String urlWSProvincias =
-            "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/Provincias/";
+    static private String urlWSEstaciones =
+            "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroMunicipio/";
 
     // inyectaremos el receiver al que enviar la respuesta cuando tengamos el resultado
     protected static ResultReceiver mResultReceiver;
 
+    private MitycRubi mMitycRubi;
 
-    public void obtenEstaciones(ResultReceiver rr) {
+    // El código de la población según Mityc
+    static String codigoPobMityc;
+
+
+    public void obtenEstaciones(ResultReceiver rr, MitycRubi mr, String codigoPob) {
 
         // guardamos el Receiver para enviar el resultado en onPostExecute()
         mResultReceiver = rr;
+        mMitycRubi = mr;
+        codigoPobMityc = codigoPob;
 
         if (running) return;
 
@@ -43,16 +51,16 @@ public class WSJsonGetEstacionesPorPoblacion {
                 return readJSONFeed();
             }
 
+            // resulta será la estructura JSon recibida del WS.
             protected void onPostExecute(String result) {
-                try {
-                    JSONObject jsonObject = new JSONObject(result);
-                    JSONObject weatherObservationItems = new JSONObject(jsonObject.getString("weatherObservation"));
-
-                    System.out.println(weatherObservationItems.getString("clouds")
-                            + " - "
-                            + weatherObservationItems.getString("stationName"));
-                } catch (Exception e) {
-                    Log.d("ReadWeatherJSONFeedTask", e.getLocalizedMessage());
+                if (result != null) {
+                    Bundle bundle = new Bundle();
+                    bundle.putString(Constantes.RESULT_DATA_KEY, result);
+                    mResultReceiver.send(Constantes.SUCCESS_RESULT, bundle);
+                } else {
+                    Bundle bundle = new Bundle();
+                    bundle.putString(Constantes.RESULT_DATA_KEY, result);
+                    mResultReceiver.send(Constantes.FAILURE_RESULT, bundle);
                 }
             }
 
@@ -60,7 +68,7 @@ public class WSJsonGetEstacionesPorPoblacion {
 
                 String response = "";
                 try {
-                    URL url = new URL(urlWSProvincias);
+                    URL url = new URL(urlWSEstaciones.concat(codigoPobMityc));
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
 
