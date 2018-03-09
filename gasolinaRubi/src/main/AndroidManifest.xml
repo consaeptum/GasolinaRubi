@@ -54,6 +54,7 @@
             android:value="AIzaSyA8WBx-K8heBgZCXFd1JrDx9trwI2c_JwM" />
 
 
+
         <!-- no usar esta
         release key ============================================
         <meta-data
@@ -67,7 +68,6 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDRvqFweFI1QLpC7FCuonfswkXmsdL5k74" />
         -->
-
     </application>
 
 </manifest>

@@ -1,9 +1,12 @@
 package com.corral.mityc;
 
 import android.content.Context;
+import android.location.Location;
 
 import com.corral.mityc.estaciones.Estacion;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
@@ -162,7 +165,60 @@ public class TablaPrecios implements Serializable {
      }
      *
      */
-    public synchronized boolean realizarPeticionJSON(String codLocalidad) {
+    public synchronized boolean realizarPeticionJSON(String jsonEstaciones) {
+        String codLocalidad = "";
+        iniciaResultados();
+        for (String[] lp: Constantes.LProductos) {
+            ArrayList<Estacion> alEstacion = resultados.get(lp[1]);
+            try {
+                JSONObject jsonSource = new JSONObject(jsonEstaciones);
+                JSONArray jsonArray = jsonSource.getJSONArray("ListaEESSPrecio");
+
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject est = jsonArray.getJSONObject(i);
+
+                    String nom = est.getString("Rótulo");
+                    String dir = est.getString("Dirección");
+
+                    if (codLocalidad.isEmpty()) {
+                        codLocalidad = est.getString("IDMunicipio");
+                    }
+
+                    Estacion e = new Estacion(nom, dir);
+
+                    if (lp[1].equals(Constantes.GA)) { e.addProducto(lp[1], est.getString(Constantes.GA_JSON) ); }
+                    if (lp[1].equals(Constantes.GAN)) { e.addProducto(lp[1], est.getString(Constantes.GAN_JSON) ); }
+                    if (lp[1].equals(Constantes.SP95)) { e.addProducto(lp[1], est.getString(Constantes.SP95_JSON) ); }
+                    if (lp[1].equals(Constantes.SP98)) { e.addProducto(lp[1], est.getString(Constantes.SP98_JSON) ); }
+
+                    Location l = new Location(nom.concat(dir));
+                    try {
+                        l.setLatitude(Double.parseDouble(est.getString("Latitud")));
+                        l.setLongitude(Double.parseDouble(est.getString("Longitud_x0020__x0028_WGS84_x0029_")));
+                    } catch (NumberFormatException nfe) {
+                        l.setLatitude(0d);
+                        l.setLongitude(0d);
+                    }
+
+                    alEstacion.add(e);
+                }
+
+            } catch (Exception e) {
+                bCache = true;
+                return false;
+            }
+        }
+        // Si hay al menos una estación es correcto
+        if (getTotalEstaciones() > 0) {
+            guardaCache(codLocalidad);
+            bCache = false;
+            return true;
+
+            // Si no hay ninguna estación, es que se inicio resultados y continúa vacío.
+        } else {
+            bCache = true;
+            return false;
+        }
     }
 
 

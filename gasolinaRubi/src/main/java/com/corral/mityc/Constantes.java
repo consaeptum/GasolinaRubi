@@ -37,11 +37,22 @@ public class Constantes {
      * los productos existentes.
      * {"código_en_mityc", "código_en_la_aplicación", "descripción"}
      */
+    public static final String GA = "GA";
+    public static final String GAN = "GAN";
+    public static final String SP95 = "SP95";
+    public static final String SP98 = "SP98";
+
+    public static final String GA_JSON = "Precio_x0020_Gasoleo_x0020_A";
+    public static final String GAN_JSON = "Precio_x0020_Nuevo_x0020_Gasoleo_x0020_A";
+    public static final String SP95_JSON = "Precio_x0020_Gasolina_x0020_95_x0020_Protección";
+    public static final String SP98_JSON = "Precio_x0020_Gasolina_x0020__x0020_98";
+
+
     public static final String[][] LProductos = {
-            {"4", "GA", "gasóleoa A"},
-            {"5", "GAN", "gasóleo A Nuevo"},
-            {"1", "SP95", "sin plomo 95"},
-            {"3", "SP98"," sin plomo 98"}
+            {"4", GA, "gasóleoa A", GA_JSON},
+            {"5", GAN, "gasóleo A Nuevo", GAN_JSON},
+            {"1", SP95, "sin plomo 95", SP95_JSON},
+            {"3", SP98," sin plomo 98", SP98_JSON}
     };
 
     public static final String url1 =
@@ -63,58 +74,58 @@ public class Constantes {
      *
      */
     public static final String[][] codigosProvincia = {
-            {"ÁLAVA", "01", "0116"},
-            {"ALBACETE", "02", "0207"},
-            {"ALICANTE", "03", "0310"},
-            {"ALMERÍA", "04", "0401"},
-            {"ASTURIAS", "33", "3303"},
-            {"ÁVILA", "05", "0508"},
-            {"BADAJOZ", "06", "0611"},
-            {"ILLES BALEARS", "07", "0704"},
-            {"BARCELONA", "08", "0809"},
-            {"BURGOS", "09", "0908"},
-            {"CÁCERES", "10", "1011"},
-            {"CÁDIZ", "11", "1101"},
-            {"CANTABRIA", "39", "3906"},
-            {"CASTELLÓ", "12", "1210"},
-            {"CEUTA", "51", "5118"},
-            {"CIUDAD REAL", "13", "1307"},
+            {"ÁLAVA", "01", "01"},
+            {"ALBACETE", "02", "02"},
+            {"ALICANTE", "03", "03"},
+            {"ALMERÍA", "04", "04"},
+            {"ASTURIAS", "33", "33"},
+            {"ÁVILA", "05", "05"},
+            {"BADAJOZ", "06", "06"},
+            {"ILLES BALEARS", "07", "07"},
+            {"BARCELONA", "08", "08"},
+            {"BURGOS", "09", "09"},
+            {"CÁCERES", "10", "10"},
+            {"CÁDIZ", "11", "11"},
+            {"CANTABRIA", "39", "39"},
+            {"CASTELLÓ", "12", "12"},
+            {"CEUTA", "51", "51"},
+            {"CIUDAD REAL", "13", "13"},
             {"CÓRDOBA", "14", "1307"},
-            {"A CORUÑA", "15", "1512"},
-            {"CUENCA", "16", "1607"},
-            {"GIRONA", "17", "1709"},
-            {"GRANADA", "18", "1801"},
-            {"GUADALAJARA", "19", "1907"},
-            {"GUIPÚZCOA", "20", "2016"},
-            {"HUELVA", "21", "2101"},
-            {"HUESCA", "22", "2202"},
-            {"JAÉN", "23", "2301"},
-            {"LEÓN", "24", "2408"},
-            {"LLEIDA", "25", "2509"},
-            {"LUGO", "27", "2712"},
-            {"MADRID", "28", "2813"},
-            {"MÁLAGA", "29", "2901"},
-            {"MELILLA", "52", "5219"},
-            {"MURCIA", "30", "3014"},
-            {"NAVARRA", "31", "3115"},
-            {"OURENSE", "32", "3212"},
-            {"PALENCIA", "34", "3408"},
-            {"LAS PALMAS", "35", "3505"},
-            {"PONTEVEDRA", "36", "3612"},
-            {"LA RIOJA", "26", "2617"},
-            {"SALAMANCA", "37", "3708"},
-            {"SANTA CRUZ DE TENERIFE", "38", "3805"},
-            {"SEGOVIA", "40", "4008"},
-            {"SEVILLA", "41", "4101"},
-            {"SORIA", "42", "4208"},
-            {"TARRAGONA", "43", "4309"},
-            {"TERUEL", "44", "4402"},
-            {"TOLEDO", "45", "4507"},
-            {"VALÈNCIA", "46", "4610"},
-            {"VALLADOLID", "47", "4708"},
-            {"VIZCAYA", "48", "4816"},
-            {"ZAMORA", "49", "4908"},
-            {"ZARAGOZA", "50", "5002"}
+            {"A CORUÑA", "15", "15"},
+            {"CUENCA", "16", "16"},
+            {"GIRONA", "17", "17"},
+            {"GRANADA", "18", "18"},
+            {"GUADALAJARA", "19", "19"},
+            {"GUIPÚZCOA", "20", "20"},
+            {"HUELVA", "21", "21"},
+            {"HUESCA", "22", "22"},
+            {"JAÉN", "23", "23"},
+            {"LEÓN", "24", "24"},
+            {"LLEIDA", "25", "25"},
+            {"LUGO", "27", "27"},
+            {"MADRID", "28", "28"},
+            {"MÁLAGA", "29", "29"},
+            {"MELILLA", "52", "52"},
+            {"MURCIA", "30", "30"},
+            {"NAVARRA", "31", "31"},
+            {"OURENSE", "32", "32"},
+            {"PALENCIA", "34", "34"},
+            {"LAS PALMAS", "35", "35"},
+            {"PONTEVEDRA", "36", "36"},
+            {"LA RIOJA", "26", "26"},
+            {"SALAMANCA", "37", "37"},
+            {"SANTA CRUZ DE TENERIFE", "38", "38"},
+            {"SEGOVIA", "40", "40"},
+            {"SEVILLA", "41", "41"},
+            {"SORIA", "42", "42"},
+            {"TARRAGONA", "43", "43"},
+            {"TERUEL", "44", "44"},
+            {"TOLEDO", "45", "45"},
+            {"VALÈNCIA", "46", "46"},
+            {"VALLADOLID", "47", "47"},
+            {"VIZCAYA", "48", "48"},
+            {"ZAMORA", "49", "49"},
+            {"ZARAGOZA", "50", "50"}
     };
 
     public static final List<String[]> codigosPoblacion = new ArrayList<String[]>();

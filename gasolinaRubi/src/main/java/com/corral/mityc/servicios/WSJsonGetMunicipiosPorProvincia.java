@@ -31,6 +31,8 @@ import java.util.HashMap;
 
 public class WSJsonGetMunicipiosPorProvincia {
 
+    private static AsyncTask<String, Void, String> mTask;
+
     private static boolean running = false;
     static private String urlWSProvincias =
             "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/Listados/MunicipiosPorProvincia/";
@@ -47,7 +49,7 @@ public class WSJsonGetMunicipiosPorProvincia {
 
         if (running) return;
 
-        new AsyncTask<String, Void, String>() {
+        mTask = new  AsyncTask<String, Void, String>() {
 
             protected String doInBackground(String... urls) {
                 return readJSONFeed();
@@ -55,6 +57,7 @@ public class WSJsonGetMunicipiosPorProvincia {
 
             protected void onPostExecute(String result) {
                 HashMap<String, String> codMitycPobs = cargaMunicipios(result);
+                if codMitycPobs == null
                 String codigoMityc = buscaPoblacion(codMitycPobs, poblacion);
 
                 if (result != null) {
@@ -153,6 +156,7 @@ public class WSJsonGetMunicipiosPorProvincia {
                 }
                 return codigo;
             }
-        }.execute();
+        };
+        mTask.execute();
     }
 }
