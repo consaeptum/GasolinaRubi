@@ -22,8 +22,6 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.HashMap;
 
-import static android.content.ContentValues.TAG;
-
 /**
  * Created by javier on 27/02/18.
  *
@@ -61,7 +59,7 @@ public class WSJsonGetMunicipiosPorProvincia {
             protected String doInBackground(String... urls) {
                 String res;
                 try {
-                    res = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrlMuniciposPorProvincia(poblacion));
+                    res = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrlMuniciposPorProvincia(cpprov));
                 } catch (IOException e) {
                     res = null;
                     Log.v(TAG, "### : " + "AsyncTask.doInBackGround() getResponseFromHttpUrl error");
@@ -74,13 +72,13 @@ public class WSJsonGetMunicipiosPorProvincia {
 
                 String codigoMityc = buscaPoblacion(codMitycPobs, poblacion);
 
-                if (result != null) {
+                if ((result != null) && (codigoMityc != null)) {
                     Bundle bundle = new Bundle();
-                    bundle.putString(Constantes.RESULT_DATA_KEY, result);
+                    bundle.putString(Constantes.RESULT_DATA_KEY, codigoMityc);
                     mResultReceiver.send(Constantes.SUCCESS_RESULT, bundle);
                 } else {
                     Bundle bundle = new Bundle();
-                    bundle.putString(Constantes.RESULT_DATA_KEY, result);
+                    bundle.putString(Constantes.RESULT_DATA_KEY, "");
                     mResultReceiver.send(Constantes.FAILURE_RESULT, bundle);
                 }
             }

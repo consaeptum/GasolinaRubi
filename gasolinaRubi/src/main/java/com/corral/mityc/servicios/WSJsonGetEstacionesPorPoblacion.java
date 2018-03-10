@@ -1,5 +1,6 @@
 package com.corral.mityc.servicios;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
@@ -23,6 +24,10 @@ import java.net.URL;
 
 public class WSJsonGetEstacionesPorPoblacion {
 
+    private static final String TAG = WSJsonGetEstacionesPorPoblacion.class.getSimpleName();
+
+    private static AsyncTask<String, Void, String> mTask;
+
     private boolean running = false;
     static private String urlWSEstaciones =
             "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroMunicipio/";
@@ -36,6 +41,7 @@ public class WSJsonGetEstacionesPorPoblacion {
     static String codigoPobMityc;
 
 
+    @SuppressLint("StaticFieldLeak")
     public void obtenEstaciones(ResultReceiver rr, MitycRubi mr, String codigoPob) {
 
         // guardamos el Receiver para enviar el resultado en onPostExecute()
@@ -45,7 +51,7 @@ public class WSJsonGetEstacionesPorPoblacion {
 
         if (running) return;
 
-        new AsyncTask<String, Void, String>() {
+        mTask = new AsyncTask<String, Void, String>() {
 
             protected String doInBackground(String... urls) {
                 return readJSONFeed();

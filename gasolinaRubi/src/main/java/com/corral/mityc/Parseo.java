@@ -244,10 +244,10 @@ public class Parseo {
                     //
                     if (sinAcentos(b).equalsIgnoreCase(sinAcentos(o))) {
                         //
-                        if (!coincidencias.containsKey(toponimioMityc)) {
-                            coincidencias.put(toponimioMityc, 1);
+                        if (!coincidencias.containsKey(cod)) {
+                            coincidencias.put(cod, 1);
                         } else {
-                            coincidencias.put(toponimioMityc, coincidencias.get(toponimioMityc) + 1);
+                            coincidencias.put(cod, coincidencias.get(cod) + 1);
                         }
                     }
                 }
@@ -255,8 +255,39 @@ public class Parseo {
         }
         // finalizamos con HashMap coincidencias conteniendo los resultados.
         // si hay un solo resultado con valor máximo, correcto..
-        return codResultTablaCoincidencias(coincidencias, poblacion);
+        return codResultTablaCoincidenciasMityc(coincidencias, poblacion);
     }
+
+
+    /*
+ * Analiza la tabla de coincidencias y devuelve el código que tiene más coincidencias
+ *
+ */
+    public static String codResultTablaCoincidenciasMityc(Map<String, Integer> coincidencias,
+                                                     String poblacion) throws RegistroNoExistente {
+        int max = 0;
+        String codigo = "";
+        for (String k: coincidencias.keySet()) {
+            int actual = coincidencias.get(k);
+            if (actual > max) {
+                max = actual;
+                codigo = k;
+            } else {
+                if (actual == max) {
+                    if (cuentaPalabras(buscarCodigoAPoblacion(k)) ==
+                            (cuentaPalabras(poblacion) - cuentaPreposiciones(poblacion))) {
+                        codigo = k;
+                    }
+                }
+            }
+        }
+        if (max > 0) {
+            return codigo;
+        } else {
+            throw new RegistroNoExistente();
+        }
+    }
+
 
     /*
      * Analiza la tabla de coincidencias y devuelve el código que tiene más coincidencias
