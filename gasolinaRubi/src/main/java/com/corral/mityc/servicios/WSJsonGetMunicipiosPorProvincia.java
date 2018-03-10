@@ -9,6 +9,7 @@ import android.util.Log;
 import com.corral.mityc.Constantes;
 import com.corral.mityc.Parseo;
 import com.corral.mityc.excepciones.RegistroNoExistente;
+import com.corral.mityc.util.NetworkUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -21,6 +22,8 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.HashMap;
 
+import static android.content.ContentValues.TAG;
+
 /**
  * Created by javier on 27/02/18.
  *
@@ -31,6 +34,8 @@ import java.util.HashMap;
  */
 
 public class WSJsonGetMunicipiosPorProvincia {
+
+    private static final String TAG = WSJsonGetMunicipiosPorProvincia.class.getSimpleName();
 
     private static AsyncTask<String, Void, String> mTask;
 
@@ -54,7 +59,14 @@ public class WSJsonGetMunicipiosPorProvincia {
         mTask = new  AsyncTask<String, Void, String>() {
 
             protected String doInBackground(String... urls) {
-                return readJSONFeed();
+                String res;
+                try {
+                    res = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrlMuniciposPorProvincia(poblacion));
+                } catch (IOException e) {
+                    res = null;
+                    Log.v(TAG, "### : " + "AsyncTask.doInBackGround() getResponseFromHttpUrl error");
+                }
+                return res;
             }
 
             protected void onPostExecute(String result) {

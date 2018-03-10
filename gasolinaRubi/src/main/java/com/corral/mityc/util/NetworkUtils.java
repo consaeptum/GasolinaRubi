@@ -39,6 +39,8 @@ public final class NetworkUtils {
             "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes";
 
     private static final String LISTADOS = "Listados";
+    private static final String ESTACIONES = "EstacionesTerrestres";
+    private static final String FILTROMUNICIPIO = "FiltroMunicipio";
     private static final String CONSULTA = "MunicipiosPorProvincia";
 
     /* The format we want our API to return */
@@ -46,34 +48,21 @@ public final class NetworkUtils {
 
 
     /**
-     * Devuelve la URL construida para consultar el servicio Mityc.
-     *
-     * @param codProvincia El código de la provincia a consultar
-     * @return URL para consultar el servicio mityc
-     */
-    public static URL getUrl(String codProvincia) {
-
-        Log.i(LOGTAG, "### NetworkUtils.getUrl(): NetworkUtils.getUrl()");
-        return buildUrlMuniciposPorProvincia(codProvincia);
-
-    }
-
-    /**
      * Construye la URL necesaria para la consulta de municipios de una provincia.
      *
      * @param provincia El código de la provincia a consultar (2 dígitos)
      * @return La Url para usar en la consulta a Mityc.
      */
-    private static URL buildUrlMuniciposPorProvincia(String provincia) {
+    public static URL buildUrlMuniciposPorProvincia(String provincia) {
         Uri mitycQueryUri = Uri.parse(MITYC_BASE_URL).buildUpon()
                 .appendPath(LISTADOS)
                 .appendPath(CONSULTA)
                 .build();
 
         try {
-            URL weatherQueryUrl = new URL(weatherQueryUri.toString());
-            Log.v(TAG, "### URL: " + weatherQueryUrl);
-            return weatherQueryUrl;
+            URL mitycQueryUrl = new URL(mitycQueryUri.toString());
+            Log.v(TAG, "### URL: " + mitycQueryUrl);
+            return mitycQueryUrl;
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return null;
@@ -81,26 +70,23 @@ public final class NetworkUtils {
     }
 
     /**
-     * Builds the URL used to talk to the weather server using a location. This location is based
-     * on the query capabilities of the weather provider that we are using.
+     * Construye la URL usada para comunicarse con el servidor Mityc y obtener
+     * las estaciones de una población.
      *
-     * @param locationQuery The location that will be queried for.
-     * @return The URL to use to query the weather server.
+     * @param poblacion El código de la población a consultar.
+     * @return La URL para enviar la consulta a mityc.
      */
-    private static URL buildUrlWithLocationQuery(String locationQuery) {
-        Uri weatherQueryUri = Uri.parse(MITYC_BASE_URL).buildUpon()
-                .appendPath()
-                .appendQueryParameter(QUERY_PARAM, locationQuery)
-                .appendQueryParameter(FORMAT_PARAM, format)
-                .appendQueryParameter(UNITS_PARAM, units)
-                .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
-                .appendQueryParameter(APIKEY_PARAM, APIKEY_OPENMAP)
+    public static URL buildUrlEstacionesPorPoblacion(String poblacion) {
+        Uri mitycQueryUri = Uri.parse(MITYC_BASE_URL).buildUpon()
+                .appendPath(ESTACIONES)
+                .appendPath(FILTROMUNICIPIO)
+                .appendPath(poblacion)
                 .build();
 
         try {
-            URL weatherQueryUrl = new URL(weatherQueryUri.toString());
-            Log.v(TAG, "### URL: " + weatherQueryUrl);
-            return weatherQueryUrl;
+            URL mitycQueryUrl = new URL(mitycQueryUri.toString());
+            Log.v(TAG, "### URL: " + mitycQueryUrl);
+            return mitycQueryUrl;
         } catch (MalformedURLException e) {
             Log.v(TAG, "### URL: + e.printStackTrace()");
             e.printStackTrace();
