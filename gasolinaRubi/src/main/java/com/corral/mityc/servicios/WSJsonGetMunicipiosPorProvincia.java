@@ -1,5 +1,6 @@
 package com.corral.mityc.servicios;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
@@ -42,6 +43,7 @@ public class WSJsonGetMunicipiosPorProvincia {
     protected static ResultReceiver mResultReceiver;
 
 
+    @SuppressLint("StaticFieldLeak")
     public static void obtenMunicipio(ResultReceiver rr, final String cpprov, final String poblacion) {
 
         // guardamos el Receiver para enviar el resultado en onPostExecute()
@@ -57,7 +59,7 @@ public class WSJsonGetMunicipiosPorProvincia {
 
             protected void onPostExecute(String result) {
                 HashMap<String, String> codMitycPobs = cargaMunicipios(result);
-                if codMitycPobs == null
+
                 String codigoMityc = buscaPoblacion(codMitycPobs, poblacion);
 
                 if (result != null) {
@@ -93,7 +95,8 @@ public class WSJsonGetMunicipiosPorProvincia {
                     // read the response
                     System.out.println("Response Code: " + conn.getResponseCode());
 
-                    InputStream in = new BufferedInputStream(conn.getInputStream());
+////exep
+                   InputStream in = new BufferedInputStream(conn.getInputStream());
                     response = org.apache.commons.io.IOUtils.toString(in, "UTF-8");
 
                     System.out.println(response);

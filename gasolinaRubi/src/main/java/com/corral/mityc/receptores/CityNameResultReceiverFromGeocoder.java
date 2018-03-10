@@ -116,7 +116,7 @@ public class CityNameResultReceiverFromGeocoder extends ResultReceiver {
 //ScrapWebMitycIntentService.startActionScrap(mitycRubi.getApplicationContext(), COD_LOC_DRAWERLIST);
 MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia mxp =
         new MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia(new Handler(), mitycRubi);
-WSJsonGetMunicipiosPorProvincia.obtenMunicipio(mxp, cpprov, poblacion);
+WSJsonGetMunicipiosPorProvincia.obtenMunicipio(mxp, cpprov.length() == 1? "0".concat(cpprov):cpprov, poblacion);
 
                     } catch (RegistroNoExistente rne) {
                         //log.log(Level.ALL, rne.getMessage());
