@@ -1,5 +1,6 @@
 package com.corral.mityc.servicios;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.location.Address;
 import android.location.Geocoder;
@@ -40,12 +41,14 @@ import java.util.regex.Pattern;
 public class GeocoderHelperConAsynctask
 {
     //private static final AndroidHttpClient ANDROID_HTTP_CLIENT = AndroidHttpClient.newInstance(GeocoderHelperConAsynctask.class.getName());
+    private static AsyncTask<Void, Void, String> mTask;
 
     private boolean running = false;
 
     // inyectaremos el receiver al que enviar la respuesta cuando tengamos el resultado
     protected static ResultReceiver mReceiver;
 
+    @SuppressLint("StaticFieldLeak")
     public void fetchCityNameFromLocation(final Context contex, ResultReceiver rr, final Location location)
     {
         // guardamos el Receiver para enviar el resultado en onPostExecute()
@@ -54,7 +57,7 @@ public class GeocoderHelperConAsynctask
         if (running)
             return;
 
-        new AsyncTask<Void, Void, String>()
+        mTask = new AsyncTask<Void, Void, String>()
         {
             protected void onPreExecute()
             {
@@ -201,7 +204,7 @@ public class GeocoderHelperConAsynctask
                 if (cityName != null)
                 {
                     // Do something with cityName
-                    Log.i("GeocoderHelperConAsynctask", cityName);
+                    Log.i("GeocoderHelperConAsync", cityName);
 
                     Bundle bundle = new Bundle();
                     bundle.putString(Constantes.RESULT_DATA_KEY, cityName);
@@ -215,7 +218,8 @@ public class GeocoderHelperConAsynctask
         }.execute();
     }
 
-    public void fetchLocationFromEstacion(final Context contex, ResultReceiver rr, final Estacion estacion)
+    @SuppressLint("StaticFieldLeak")
+    public void fetchLocationFromPoblacion(final Context contex, ResultReceiver rr, final Estacion estacion)
     {
         // guardamos el Receiver para enviar el resultado en onPostExecute()
         mReceiver = rr;
@@ -346,7 +350,7 @@ public class GeocoderHelperConAsynctask
                 if (loc != null)
                 {
                     // Do something with cityName
-                    Log.i("GeocoderHelperConAsynctask", loc.toString());
+                    Log.i("GeocoderHelperConAsync", loc.toString());
 
                     Bundle bundle = new Bundle();
                     bundle.putSerializable(Constantes.RESULT_DATA_KEY, estacion);

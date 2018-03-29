@@ -34,6 +34,9 @@ public class MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia extends
             // acción a realizar cuando ya tenemos el código de la población de mityc
             if (mCodigoMitycPoblacionResultado != null) {
 
+                //mMitycRubi.COD_LOCALIDAD = mCodigoMitycPoblacionResultado;
+                mMitycRubi.COD_LOC_DRAWERLIST = mCodigoMitycPoblacionResultado;
+
                 // utilizamos WSJsonGetEstacionesPorPoblacion para obtener la lista
                 // de estaciones de Mityc.
 

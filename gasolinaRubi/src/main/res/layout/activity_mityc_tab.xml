@@ -86,6 +86,7 @@
     <LinearLayout
         android:layout_width="240dp"
         android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/activity_vertical_margin"
         android:layout_gravity="start"
         android:divider="@android:color/black"
         android:orientation="vertical">
@@ -94,17 +95,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:background="@android:color/black"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:background="#cdd27c"
             android:gravity="right">
 
             <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@android:drawable/ic_media_rew"
+                android:src="@android:drawable/ic_delete"
                 android:id="@+id/imageIconSwipeLeft"
                 android:adjustViewBounds="false"
-                android:layout_gravity="right"
-                android:background="@android:color/black"/>
+                android:layout_gravity="left"
+                android:background="#cdd27c"/>
         </LinearLayout>
 
         <fragment

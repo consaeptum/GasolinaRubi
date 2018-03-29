@@ -14,13 +14,10 @@ import com.corral.mityc.util.NetworkUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.ProtocolException;
-import java.net.URL;
 import java.util.HashMap;
+
+import static com.corral.mityc.MitycRubi.NOM_LOC_DRAWERLIST;
 
 /**
  * Created by javier on 27/02/18.
@@ -71,6 +68,7 @@ public class WSJsonGetMunicipiosPorProvincia {
                 HashMap<String, String> codMitycPobs = cargaMunicipios(result);
 
                 String codigoMityc = buscaPoblacion(codMitycPobs, poblacion);
+                NOM_LOC_DRAWERLIST = poblacion;
 
                 if ((result != null) && (codigoMityc != null)) {
                     Bundle bundle = new Bundle();
@@ -83,43 +81,6 @@ public class WSJsonGetMunicipiosPorProvincia {
                 }
             }
 
-
-            /*
-             * [{
-             *   "IDMunicipio":"Contenido de la cadena",
-             *           "IDProvincia":"Contenido de la cadena",
-             *           "IDCCAA":"Contenido de la cadena",
-             *           "Municipio":"Contenido de la cadena",
-             *           "Provincia":"Contenido de la cadena",
-             *           "CCAA":"Contenido de la cadena"
-             * }]
-            */
-            String readJSONFeed() {
-
-                String response = "";
-                try {
-                    URL url = new URL(urlWSProvincias.concat(cpprov));
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-
-                    // read the response
-                    System.out.println("Response Code: " + conn.getResponseCode());
-
-////exep
-                   InputStream in = new BufferedInputStream(conn.getInputStream());
-                    response = org.apache.commons.io.IOUtils.toString(in, "UTF-8");
-
-                    System.out.println(response);
-
-                } catch (java.net.MalformedURLException e){
-                    return null;
-                } catch (ProtocolException e) {
-                    return null;
-                } catch (IOException e) {
-                    return null;
-                }
-                return response;
-            }
 
             /*
              * Carga la lista de Municipios para el código de provincia dado y lo devuelve

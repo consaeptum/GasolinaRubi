@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical" android:layout_width="match_parent"
+    android:background="@android:color/black"
     android:layout_height="fill_parent">
 
     <TextView
+        android:id="@+id/textView3"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:text="Seleccionar provincia y población"
-        android:id="@+id/textView3"
         android:layout_gravity="center_horizontal"
         android:layout_weight="1"
-        android:textSize="20dp"
-        android:textStyle="bold"
-        android:textColor="#025c0e"
+        android:background="#ffdd33"
+        android:text="Seleccionar provincia y población"
         android:textAlignment="center"
-        android:background="#ffdd33" />
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="30sp"
+        android:textStyle="bold" />
 
     <ExpandableListView
         android:layout_width="match_parent"

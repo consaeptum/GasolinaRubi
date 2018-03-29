@@ -18,6 +18,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -48,11 +49,13 @@ import android.widget.TextView;
 
 import com.corral.mityc.estaciones.Estacion;
 import com.corral.mityc.receptores.CityNameResultReceiverFromGeocoder;
+import com.corral.mityc.receptores.EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion;
 import com.corral.mityc.receptores.LocationEstacionResultReceiverFromGeocoder;
 import com.corral.mityc.receptores.LocationPoblacionCentroResultReceiver;
 import com.corral.mityc.receptores.ScrapWebMitycReceiver;
 import com.corral.mityc.servicios.GeocoderHelperConAsynctask;
 import com.corral.mityc.servicios.LocationPoblacionCentroIntentService;
+import com.corral.mityc.servicios.WSJsonGetEstacionesPorPoblacion;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -78,10 +81,15 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static android.support.v4.view.ViewPager.LayoutParams.MATCH_PARENT;
-import static com.corral.mityc.Parseo.buscarCodigoAPoblacion;
-import static com.corral.mityc.Parseo.cargaCodigosPoblacion;
+import static com.corral.mityc.MitycRubi.PlaceholderFragment.omrc;
 import static com.corral.mityc.R.id.container;
 import static com.google.ads.AdRequest.LOGTAG;
+
+//import static com.corral.mityc.Parseo.cargaCodigosPoblacion;
+
+//import com.google.android.gms.maps.MapFragment;
+
+//import com.google.android.gms.maps.MapFragment;
 
 //import static com.corral.mityc.MitycRubi.PlaceholderFragment.mapFragment;
 //import static com.corral.mityc.MitycRubi.PlaceholderFragment.contexto;
@@ -128,11 +136,14 @@ public class MitycRubi extends AppCompatActivity implements
     // COD_LOCALIDAD seguirá indicando la localidad en la que estemos.
     public static String COD_LOCALIDAD = "";
     public static String COD_LOC_DRAWERLIST = "";
+    public static String NOM_LOCALIDAD = "";
+    public static String NOM_LOC_DRAWERLIST = "";
+    public static Boolean cambioPoblacion = false;
 
     private String listaCodPoblaciones;
+    private String listaNomPoblaciones;
     private static DrawerLayout mDrawerLayout;
     private ListView mDrawerList;
-
     public OnMapReadyCallback mapCallBack = this;
 
 
@@ -160,6 +171,8 @@ public class MitycRubi extends AppCompatActivity implements
 
     // la barra de progreso que indica que está cargando los datos.
     private ProgressDialog progressBar;
+    private android.app.Fragment staticFragment;
+    private static MapFragment mapFragment;
 
     /*******************************************************************************
      ************************** Métodos del interfaz LocationListener **************
@@ -181,14 +194,18 @@ public class MitycRubi extends AppCompatActivity implements
         googleMap = gMap;
         if ((mLastLocation != null) && (!COD_LOC_DRAWERLIST.isEmpty())) {
 
+            prepararDrawerList();
             // iniciamos servicio de coordenadas de otra población para no usar este hilo
             // al consultar las coordenadas via http.
             mLocationPoblacionCentroResultReceiver = new LocationPoblacionCentroResultReceiver(new Handler(), this);
-            LocationPoblacionCentroIntentService.startAction(this, mLocationPoblacionCentroResultReceiver, COD_LOC_DRAWERLIST);
+            LocationPoblacionCentroIntentService.startAction(this, mLocationPoblacionCentroResultReceiver, null, NOM_LOC_DRAWERLIST);
         }
 
     }
 
+    public android.app.Fragment getStaticFragment() {
+        return staticFragment;
+    }
 
     /*******************************************************************************
      ************************** Métodos del interfaz OnConnectionFailedListener ****
@@ -232,24 +249,22 @@ public class MitycRubi extends AppCompatActivity implements
         mLocationEstacionResultReceiverFromGeocoder = new LocationEstacionResultReceiverFromGeocoder(new Handler(), this);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // recargamos los códigos de población.
-        cargaCodigosPoblacion(this);
-
         tp = new TablaPrecios(this);
-        SharedPreferences ultimaLocalidad = getSharedPreferences(Constantes.SHARED_PREFS_FILE, 0);
-        COD_LOCALIDAD = ultimaLocalidad.getString(Constantes.SHARED_PREFS_ULTIMA_LOCALIDAD, "");
-        COD_LOC_DRAWERLIST = COD_LOCALIDAD;
 
-        listaCodPoblaciones = getListaCodPoblaciones();
+        listaCodPoblaciones = getListaCodPoblaciones()[0];
 
         ImageView iconDrawer = (ImageView) findViewById(R.id.imageIconDrawer);
         View.OnClickListener mToggleDrawerButton = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+                mapFragment.getMapAsync(omrc);
+
                 mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
                 mDrawerLayout.openDrawer(Gravity.LEFT);
                 // evita que se cierre el DrawerLayout al moverse por el mapa.
                 mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN);
+                prepararDrawerList();
             }
         };
 
@@ -289,9 +304,12 @@ public class MitycRubi extends AppCompatActivity implements
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
-        mScrappingScrapWebMitycReceiver = new ScrapWebMitycReceiver(this);
+        //mScrappingScrapWebMitycReceiver = new ScrapWebMitycReceiver(this);
 
-        prepararDrawerList();
+        staticFragment = getFragmentManager().findFragmentById(R.id.map);
+
+        // guardamos el mapFragment para poder acceder a él desde clickEnEstacion()
+        mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
 
         conectarApiGoogle();
     }
@@ -303,14 +321,26 @@ public class MitycRubi extends AppCompatActivity implements
         if (requestCode == RESULT_COD_POB) {
             // Verificamos que la respuesta sea correcta
             if (resultCode == RESULT_OK) {
-                String pob = data.getStringExtra(NuevaPoblacion.RESULTADO);
-                String lcp = getListaCodPoblaciones();
-                if (!lcp.isEmpty()) lcp = lcp.concat("#");
-                lcp = lcp.concat(pob);
-                setListaCodPoblaciones(lcp);
-                prepararDrawerList();
-                COD_LOC_DRAWERLIST = pob;
-                actualizar();
+
+                // recibimos un string con codigo#nombrePoblación de NuevaPoblacion setOnChildClickListener
+                String[] res = data.getStringExtra(NuevaPoblacion.RESULTADO).split("#");
+                String codpob = res[0];
+                String nompob = res[1];
+                String codigos = getListaCodPoblaciones()[0];
+                String nombres = getListaCodPoblaciones()[1];
+
+                if (!codigos.isEmpty()) codigos = codigos.concat("#");
+                codigos = codigos.concat(codpob);
+
+                if (!nombres.isEmpty()) nombres = nombres.concat("#");
+                nombres = nombres.concat(nompob);
+
+                setListaCodPoblaciones(new String[] {codigos, nombres});
+                COD_LOC_DRAWERLIST = codpob;
+                NOM_LOC_DRAWERLIST = nompob;
+
+                // cambiamos población a la última recién introducida
+                cambioPoblacion(codigos.split("#").length);
             }
         }
         if (requestCode == PETICION_CONFIG_UBICACION) {
@@ -347,14 +377,14 @@ public class MitycRubi extends AppCompatActivity implements
         super.onResume();
 
         // recargamos los códigos de población.
-        if (Constantes.codigosPoblacion == null)
+/*        if (Constantes.codigosPoblacion == null)
             cargaCodigosPoblacion(this);
-
+*/
 
         // conectamos el cliente de geolocalización.
-        if (!mGoogleApiClient.isConnected()) {
-            mGoogleApiClient.connect();
-        }
+            if (!mGoogleApiClient.isConnected()) {
+                mGoogleApiClient.connect();
+            }
 
         // The filter's action is BROADCAST_ACTION
         IntentFilter mStatusIntentFilter = new IntentFilter(
@@ -363,6 +393,7 @@ public class MitycRubi extends AppCompatActivity implements
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mScrappingScrapWebMitycReceiver,
                 mStatusIntentFilter);
+
     }
 
 
@@ -514,7 +545,7 @@ public class MitycRubi extends AppCompatActivity implements
         return estacionVer;
     }
 
-    public void setEstacionVer(Estacion e) {
+    public static void setEstacionVer(Estacion e) {
         estacionVer = e;
     }
 
@@ -616,8 +647,11 @@ public class MitycRubi extends AppCompatActivity implements
 
         // una vez tenemos las coordenadas preparamos el mapa para que luego automaticamente
         // se llame a onMapReady()
-        MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+
+/*
+        mapFragment = (MapFragment) this.getFragmentManager().findFragmentById(R.id.map);
+        mapFragment.getMapAsync(omrc);
+*/
 
         // iniciamos servicio de geolocalizacion.
         mCityNameResultReceiverFromGeocoder = new CityNameResultReceiverFromGeocoder(new Handler(), this);
@@ -637,8 +671,8 @@ public class MitycRubi extends AppCompatActivity implements
         mlocationRequest.setFastestInterval(500);
         mlocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
 
-        LocationSettingsRequest.Builder locSettingsRequest = new LocationSettingsRequest.Builder()
-                        .addLocationRequest(mlocationRequest);
+        //LocationSettingsRequest.Builder locSettingsRequest = new LocationSettingsRequest.Builder()
+        //                .addLocationRequest(mlocationRequest);
 
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
 
@@ -700,7 +734,7 @@ public class MitycRubi extends AppCompatActivity implements
         mostrarTituloBuscando(null);
 
         // usamos ApiGoogle solo para coordenadas
-        if ((mGoogleApiClient != null) && (!mGoogleApiClient.isConnected())) {
+        if ((!cambioPoblacion) && (mGoogleApiClient != null) && (!mGoogleApiClient.isConnected())) {
             conectarApiGoogle();
         } else {
 
@@ -710,13 +744,25 @@ public class MitycRubi extends AppCompatActivity implements
                     mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
 
                     // iniciamos servicio de geolocalizacion.
-                    mCityNameResultReceiverFromGeocoder = new CityNameResultReceiverFromGeocoder(new Handler(), this);
-                    new GeocoderHelperConAsynctask().fetchCityNameFromLocation(this, mCityNameResultReceiverFromGeocoder, mLastLocation);
+                    if (!cambioPoblacion) {
+                        mCityNameResultReceiverFromGeocoder = new CityNameResultReceiverFromGeocoder(new Handler(), this);
+                        new GeocoderHelperConAsynctask().fetchCityNameFromLocation(this, mCityNameResultReceiverFromGeocoder, mLastLocation);
+                    } else {
+                        // aquí debemos tener NOM_LOCALIDAD, COD_LOC_DRAWER_LIST, COD_PRO_DRAWER_LIST
+                        // Si llegamos aquí cuando el usuario ha
+
+                        WSJsonGetEstacionesPorPoblacion mWSJE = new WSJsonGetEstacionesPorPoblacion();
+                        EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion eRRfWSExP =
+                                new EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion(new Handler(), this);
+                        mWSJE.obtenEstaciones(eRRfWSExP, this, COD_LOC_DRAWERLIST);
+                    }
                 }
             } catch (SecurityException se) {
                 Log.i(LOGTAG,"### MitycRubi.actualizar SecurityException");
             }
         }
+        Toolbar t = (Toolbar) findViewById(R.id.toolbar);
+        t.setVisibility(View.VISIBLE);
     }
 
 
@@ -724,85 +770,111 @@ public class MitycRubi extends AppCompatActivity implements
      ************************** Métodos para manejar el menu DrawerList ************
      *******************************************************************************/
 
-    public String getListaCodPoblaciones() {
+    /*
+     * devuelve array de strings.
+     * [listaCodPoblaciones, listaNomPoblaciones]
+     */
+    public String[] getListaCodPoblaciones() {
         SharedPreferences ultimaLocalidad = getSharedPreferences(Constantes.SHARED_PREFS_FILE, 0);
         listaCodPoblaciones = ultimaLocalidad.getString(Constantes.SHARED_LISTA_CODIGOS_POBLACIONES, "");
+        listaNomPoblaciones = ultimaLocalidad.getString(Constantes.SHARED_LISTA_NOMS_POBLACIONES, "");
+
         if (listaCodPoblaciones.startsWith("#"))
             listaCodPoblaciones = listaCodPoblaciones.substring(1, listaCodPoblaciones.length());
         if (listaCodPoblaciones.endsWith("#"))
             listaCodPoblaciones = listaCodPoblaciones.substring(0, listaCodPoblaciones.length() - 1);
         listaCodPoblaciones = listaCodPoblaciones.replace("##", "#");
-        return listaCodPoblaciones;
+
+        if (listaNomPoblaciones.startsWith("#"))
+            listaNomPoblaciones = listaNomPoblaciones.substring(1, listaNomPoblaciones.length());
+        if (listaNomPoblaciones.endsWith("#"))
+            listaNomPoblaciones = listaNomPoblaciones.substring(0, listaNomPoblaciones.length() - 1);
+        listaNomPoblaciones = listaNomPoblaciones.replace("##", "#");
+        String[] retorno = { listaCodPoblaciones, listaNomPoblaciones };
+
+        return retorno;
     }
 
+    /*
+     * devuelve la posición en el menú del nombre de la población dada
+     */
     public int posicionListaCodPoblaciones(String poblacion) {
-        if (poblacion.equals(buscarCodigoAPoblacion(COD_LOCALIDAD))) return 0;
-        String lista = getListaCodPoblaciones();
-        int i = 1;
-        int j = -1;
-        for (String c: lista.split("#")) {
-            String p = buscarCodigoAPoblacion(c);
-            if (poblacion.equals(p)) {
-                poblacion = c;
-                j = i;
-                break;
+        if (poblacion.equals(NOM_LOCALIDAD)) return 0;
+        String lista = getListaCodPoblaciones()[1];
+        String[] arrPobs = lista.split("#");
+        for (int i = 0; i < arrPobs.length; i++) {
+            if (poblacion.equals(arrPobs[i])) {
+                return i + 1;
             }
-            i++;
         }
-        return j;
+        return -1;
     }
+
 
     public void deleteListaCodPoblaciones(String poblacion) {
-        String lista = getListaCodPoblaciones();
-        for (String c: lista.split("#")) {
-            String p = buscarCodigoAPoblacion(c);
-            if (poblacion.equals(p)) {
-                poblacion = c;
+        String[] l = getListaCodPoblaciones();
+        String listaCod = l[0];
+        String listaNom = l[1];
+
+        int i = 0;
+        String[] arrCod = listaCod.split("#");
+        String[] arrNom = listaNom.split("#");
+        for (i = 0; i < arrNom.length; i++) {
+            if (poblacion.equals(arrNom[i])) {
                 break;
             }
         }
-        lista = lista.replaceAll(
-                        "(^" + poblacion + "$)|(^" + poblacion
-                        + "#)|(#" + poblacion + "$)|(#" + poblacion
+        if ((i < arrNom.length) && (!arrNom[i].equals(poblacion))) return;
+
+        listaCod = listaCod.replaceAll(
+                        "(^" + arrCod[i] + "$)|(^" + arrCod[i]
+                        + "#)|(#" + arrCod[i] + "$)|(#" + arrCod[i]
                         + "#)"
                         , "#");
-        if (lista.startsWith("#"))
-            lista = lista.substring(1, lista.length());
-        if (lista.endsWith("#"))
-            lista = lista.substring(0, lista.length() - 1);
-        lista = lista.replace("##", "#");
-        setListaCodPoblaciones(lista);
+        listaNom = listaNom.replaceAll(
+                "(^" + arrNom[i] + "$)|(^" + arrNom[i]
+                        + "#)|(#" + arrNom[i] + "$)|(#" + arrNom[i]
+                        + "#)"
+                , "#");
+
+        if (listaCod.startsWith("#"))
+            listaCod = listaCod.substring(1, listaCod.length());
+        if (listaCod.endsWith("#"))
+            listaCod = listaCod.substring(0, listaCod.length() - 1);
+        listaCod = listaCod.replace("##", "#");
+
+        if (listaNom.startsWith("#"))
+            listaNom = listaNom.substring(1, listaNom.length());
+        if (listaNom.endsWith("#"))
+            listaNom = listaNom.substring(0, listaNom.length() - 1);
+        listaNom = listaNom.replace("##", "#");
+        setListaCodPoblaciones(new String[] { listaCod, listaNom });
     }
 
-    public void setListaCodPoblaciones(String lista) {
+    public void setListaCodPoblaciones(String[] lista) {
         SharedPreferences.Editor editor = getApplicationContext().getSharedPreferences(Constantes.SHARED_PREFS_FILE, 0).edit();
-        editor.putString(Constantes.SHARED_LISTA_CODIGOS_POBLACIONES, lista);
+        editor.putString(Constantes.SHARED_LISTA_CODIGOS_POBLACIONES, lista[0]);
+        editor.putString(Constantes.SHARED_LISTA_NOMS_POBLACIONES, lista[1]);
         editor.commit();
     }
 
     public void preparaListaMenuDrawer() {
 
-        int j = 0;
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
-        String[] listaCPob = getListaCodPoblaciones().split("#");
-        for (int i = 0; i < listaCPob.length; i++) {
-            listaCPob[i] = buscarCodigoAPoblacion(listaCPob[i]);
-            if (COD_LOC_DRAWERLIST.equals(listaCPob[i])) j = i;
-        }
-        String listaPoblaciones = null;
-        if ((!listaCPob[0].isEmpty()) && (listaCPob.length >= 1))
-            listaPoblaciones = buscarCodigoAPoblacion(COD_LOCALIDAD) + "#"
-                    + TextUtils.join("#", listaCPob).concat("#<otras poblaciones>");
-        else
-        if (COD_LOCALIDAD.isEmpty()) {
-            listaPoblaciones = "< otras poblaciones >";
-        } else {
-            listaPoblaciones = buscarCodigoAPoblacion(COD_LOCALIDAD).concat("#<otras poblaciones>");
-        }
-        listaCPob = listaPoblaciones.split("#");
+        String[] lista = getListaCodPoblaciones();
+        String[] listaCod = lista[0].split("#");
+        String[] listaNom = lista[1].split("#");
 
-        mDrawerList.setAdapter(new DrawerListAdapter(getApplicationContext(), Arrays.asList(listaCPob)));
+        String listaPoblaciones = null;
+        if (!listaCod[0].isEmpty()) {
+            listaPoblaciones = NOM_LOCALIDAD + "#" + TextUtils.join("#", listaNom).concat("#<otras poblaciones>");
+        } else {
+            listaPoblaciones = NOM_LOCALIDAD.concat("#<otras poblaciones>");
+        }
+        listaNom = listaPoblaciones.split("#");
+        mDrawerList.setAdapter(new DrawerListAdapter(getApplicationContext(), Arrays.asList(listaNom)));
     }
+
 
     public void prepararDrawerList() {
 
@@ -867,6 +939,7 @@ public class MitycRubi extends AppCompatActivity implements
         private float mLastY;
 
 
+
         public DrawerListAdapter(Context context, List<String> labels) {
             super(context, R.layout.drawer_list_item, labels);
             this.context = context;
@@ -891,7 +964,7 @@ public class MitycRubi extends AppCompatActivity implements
                 holder = new ViewHolder();
                 holder.textView1 = (TextView) rowView.findViewById(R.id.text1);
                 holder.textView1.setText(labels.get(position));
-                if (holder.textView1.getText().toString().equalsIgnoreCase(buscarCodigoAPoblacion(COD_LOC_DRAWERLIST))) {
+                if (holder.textView1.getText().toString().equalsIgnoreCase(NOM_LOC_DRAWERLIST)) {
                     holder.textView1.setBackgroundColor(Color.MAGENTA);
                 }
                 holder.icon_1 = (ImageView) rowView.findViewById(R.id.locationnow);
@@ -942,22 +1015,18 @@ public class MitycRubi extends AppCompatActivity implements
 
                                 });
                             }
-/*                            else {
-                                if (currentX < mLastX - 5 ) {
-                                    tv.setBackgroundColor(Color.BLACK);
-                                }
-                                if (currentX < mLastX - 10) {
-                                    mDrawerLayout.closeDrawer(Gravity.LEFT);
-                                }
+                            if (( currentY > mLastY + 5 ) || ( currentY < mLastY - 5)) {
+                                tv.setBackgroundColor(Color.BLACK);
                             }
-*/
                             break;
                         case MotionEvent.ACTION_UP:
 
                             tv.setBackgroundColor(Color.BLACK);
-                            if ((currentX == mLastX) && (currentY == mLastY)) {
+                            if (((currentX <= mLastX + 20) && (currentX >= mLastX - 20)) &&
+                                    ((currentY <= mLastY + 10) && (currentY >= mLastY - 10))) {
                                 onItemListClick(posicionListaCodPoblaciones(tv.getText().toString()));
                             }
+
                             break;
                     }
                     return true;
@@ -978,13 +1047,16 @@ public class MitycRubi extends AppCompatActivity implements
     }
 
     private void nuevaPoblacion() {
+        cambioPoblacion = true;
+        Toolbar t = (Toolbar) findViewById(R.id.toolbar);
+        t.setVisibility(View.INVISIBLE);
         Intent intent = new Intent(this, NuevaPoblacion.class);
         startActivityForResult(intent, RESULT_COD_POB);
-        actualizar();
     }
 
     private void cambioPoblacion(int position) {
 
+        cambioPoblacion = true;
         // iniciar barra de progreso de carga
         progressBar = new ProgressDialog(this);
         progressBar.setCancelable(true);
@@ -993,13 +1065,17 @@ public class MitycRubi extends AppCompatActivity implements
         progressBar.show();
 
         if (position > 0) {
-            COD_LOC_DRAWERLIST = listaCodPoblaciones.split("#")[position - 1];
+            COD_LOC_DRAWERLIST = getListaCodPoblaciones()[0].split("#")[position - 1];
+            NOM_LOC_DRAWERLIST = getListaCodPoblaciones()[1].split("#")[position - 1];
         } else {
             COD_LOC_DRAWERLIST = COD_LOCALIDAD;
+            NOM_LOC_DRAWERLIST = NOM_LOCALIDAD;
+            cambioPoblacion = false;
         }
+        mostrarTituloBuscando(NOM_LOC_DRAWERLIST);
+
         // mientras se actualiza ViewPages, mostramos lo que tenemos en caché de esta población.
         mDrawerLayout.closeDrawer(Gravity.LEFT);
-        mostrarTituloBuscando(buscarCodigoAPoblacion(COD_LOC_DRAWERLIST));
         tp.recuperaCache(COD_LOC_DRAWERLIST, this);
         mViewPager.getAdapter().notifyDataSetChanged();
         actualizar();
@@ -1021,9 +1097,7 @@ public class MitycRubi extends AppCompatActivity implements
         // creamos esta variable intermedia statica para poder manejar el map
         // cuando el usuario haga clic en una estación. Lo iniciamos en newInstance().
         public static OnMapReadyCallback omrc;
-
-        //private com.google.android.gms.maps.SupportMapFragment mapFragment = null;
-
+        private static Fragment mFragment;
 
         public PlaceholderFragment() {
         }
@@ -1170,7 +1244,7 @@ public class MitycRubi extends AppCompatActivity implements
                                     public void onAnimationRepeat(Animation a){}
                                     public void onAnimationEnd(Animation a){
                                         v.setBackgroundColor((cnt % 2 != 0)? Color.WHITE: Color.parseColor("#DECBCB"));
-                                        clickEnEstacion(e);
+                                        clickEnEstacion(e, getActivity());
                                     }
 
                                 });
@@ -1182,13 +1256,25 @@ public class MitycRubi extends AppCompatActivity implements
                 }
             }
         }
-
-        private void clickEnEstacion(Estacion estacion) {
+///###
+        private void clickEnEstacion(Estacion estacion, FragmentActivity cntx) {
 
             // iniciamos servicio de geolocalizacion.
-            new GeocoderHelperConAsynctask().fetchLocationFromEstacion(getContext(), mLocationEstacionResultReceiverFromGeocoder, estacion);
+            //new GeocoderHelperConAsynctask().fetchLocationFromEstacion(getContext(), mLocationEstacionResultReceiverFromGeocoder, estacion);
+
+            // obtenemos cordenadas de la estación previamente preparada con coordenadasResultReciever.
+            setEstacionVer(estacion);
+
+            // !! quizás esta parte debería llamarse desde LocationEstacionResultReceiverFromGeocoder
+            // !! porque mientras no tenemos la localización, no debería modificarse el mapa.
+
+            // una vez tenemos las coordenadas preparamos el mapa para que luego automaticamente
+            // se llame a onMapReady()
+
+            MitycRubi.mapFragment.getMapAsync(omrc);
 
             // abrimos el Drawer
+            mDrawerLayout = (DrawerLayout) cntx.findViewById(R.id.drawer_layout);
             mDrawerLayout.openDrawer(Gravity.LEFT);
             // evita que se cierre el DrawerLayout al moverse por el mapa.
             mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN);
@@ -1212,7 +1298,7 @@ public class MitycRubi extends AppCompatActivity implements
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1, mapCallBack);
+            return PlaceholderFragment.newInstance(position + 1, mapCallBack );
         }
 
         public int getItemPosition(Object item) {

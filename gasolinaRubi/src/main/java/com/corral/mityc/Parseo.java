@@ -1,9 +1,5 @@
 package com.corral.mityc;
 
-import android.content.Context;
-import android.content.res.AssetManager;
-import android.location.Location;
-
 import com.corral.mityc.excepciones.FalloConexion;
 import com.corral.mityc.excepciones.RegistroNoExistente;
 
@@ -19,15 +15,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.Normalizer;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.corral.mityc.Constantes.codigosPoblacion;
 import static com.corral.mityc.Constantes.codigosProvincia;
 
 
@@ -42,7 +34,7 @@ public class Parseo {
      * <codigo_provincia>,<nombre_poblacion>,<codigo_poblacion>
      * @param context
      */
-    public static void cargaCodigosPoblacion(Context context) {
+ /*   public static void cargaCodigosPoblacion(Context context) {
         AssetManager assetManager = context.getAssets();
 
         try {
@@ -59,7 +51,7 @@ public class Parseo {
                 codigosPoblacion.add(line);
             }
             */
-
+/*
             List<String[]> pobList = csvReader.read();
 
             for(String[] pobData:pobList ) {
@@ -69,14 +61,14 @@ public class Parseo {
             e.printStackTrace();
         }
     }
-
+*/
 
     /**
      * Obtenemos el nombre de la localidad a partir del código
      * @param codigo
      * @return El nombre de la localidad o null si no lo encuentra.
      */
-    public static String buscarCodigoAPoblacion(String codigo) {
+/*    public static String buscarCodigoAPoblacion(String codigo) {
 
         Map<String, Integer> coincidencias = new HashMap<String, Integer>();
         // recorrer la lista de provincias.
@@ -89,14 +81,14 @@ public class Parseo {
         }
         return "";
     }
-
+*/
 
     /**
      * Obtenemos el nombre de la provincia a partir del código de población
      * @param codigo población
      * @return El nombre de la provincia o null si no lo encuentra.
      */
-    public static String buscarCodigoAProvincia(String codigo) {
+/*    public static String buscarCodigoAProvincia(String codigo) {
 
         Map<String, Integer> coincidencias = new HashMap<String, Integer>();
         // recorrer la lista de provincias.
@@ -114,13 +106,14 @@ public class Parseo {
         }
         return "";
     }
+*/
 
     /**
      * Obtenemos la lista de poblaciones para la provincia dada.
      * @param provincia código de provincia
      * @return La lista de las poblaciones de esa provincia.
      */
-    public static List<String> listaNomPobXProv(String provincia) {
+/*    public static List<String> listaNomPobXProv(String provincia) {
 
         if (provincia.startsWith("0")) provincia = provincia.substring(1);
         List<String> poblaciones = new ArrayList<String>();
@@ -134,7 +127,26 @@ public class Parseo {
         }
         return poblaciones;
     }
+*/
 
+    /**
+     * Obtenemos el nombre de la población dada.
+     * @param codigo código de poblacion
+     * @return el nombre de la poblacion, null si no lo encuentra.
+     */
+/*    public static String buscarPoblacionXCodigo(String codigo) {
+
+        // recorrer la lista de poblaciones
+        Iterator i = codigosPoblacion.iterator();
+        while (i.hasNext()) {
+            String[] s = (String[]) i.next();
+            if (codigo.equals(s[2])) {
+                return s[1];
+            }
+        }
+        return null;
+    }
+*/
 
     /**
      * Obtenemos el código de la provincia.
@@ -143,34 +155,15 @@ public class Parseo {
      * la encuentra.
      */
     public static String buscarCodigoProvincia(String provincia) {
-        String[] provSplited = provincia.split(" ");
 
-        String codProvincia = "";
-        Map<String, Integer> coincidencias = new HashMap<String, Integer>();
+        provincia = sinAcentos(provincia);
+
         // recorrer la lista de provincias.
         for (String[] p: codigosProvincia) {
-            String[] provOrigen = p[0].split(" ");
-            // recorrer las palabras de una provincia de la lista.
-            for (String o: provOrigen) {
-                // para cada palabra de provincia a buscar comparamos con o
-                for (String b: provSplited) {
-                    if (sinAcentos(b).equalsIgnoreCase(sinAcentos(o))) {
-                        if (!coincidencias.containsKey(p[1])) {
-                            coincidencias.put(p[1], 1);
-                        } else {
-                            coincidencias.put(p[1], coincidencias.get(p[1])+1);
-                        }
-                    }
-                }
-            }
+
+            if (sinAcentos(p[0]).equalsIgnoreCase(provincia)) return p[1];
         }
-        // finalizamos con HashMap coincidencias conteniendo los resultados.
-        // si hay un solo resultado con valor máximo, correcto..
-        try {
-            return codResultTablaCoincidencias(coincidencias, provincia);
-        } catch (RegistroNoExistente rne) {
-            return null;
-        }
+        return null;
     }
 
 
@@ -182,7 +175,7 @@ public class Parseo {
      * @return Devuelve el código de la población como String de dígitos numéricos
      * o null si no la encuentra.
      */
-    public static String buscarCodigoPoblacion(String codProvincia, String poblacion) throws RegistroNoExistente {
+/*    public static String buscarCodigoPoblacion(String codProvincia, String poblacion) throws RegistroNoExistente {
         String[] poblSplited = poblacion.split(" ");
         String codPoblacion = "";
         // Map<codigo_poblacion, numero_coincidencias>
@@ -215,6 +208,7 @@ public class Parseo {
         // si hay un solo resultado con valor máximo, correcto..
         return codResultTablaCoincidencias(coincidencias, poblacion);
     }
+*/
 
 
     /**
@@ -235,6 +229,9 @@ public class Parseo {
         // recorremos los elementos del array con igual codProvincia
         for (String cod: hm.keySet()) {
             String toponimioMityc = hm.get(cod);
+
+            System.out.println("#### topinimioMityc......" + toponimioMityc);
+
             String[] pobOrigen = toponimioMityc.split(" ");
             // recorrer las palabras de una poblacion de la lista.
             for (String o : pobOrigen) {
@@ -255,7 +252,7 @@ public class Parseo {
         }
         // finalizamos con HashMap coincidencias conteniendo los resultados.
         // si hay un solo resultado con valor máximo, correcto..
-        return codResultTablaCoincidenciasMityc(coincidencias, poblacion);
+        return codResultTablaCoincidenciasMityc(hm, coincidencias, poblacion);
     }
 
 
@@ -263,7 +260,7 @@ public class Parseo {
  * Analiza la tabla de coincidencias y devuelve el código que tiene más coincidencias
  *
  */
-    public static String codResultTablaCoincidenciasMityc(Map<String, Integer> coincidencias,
+    public static String codResultTablaCoincidenciasMityc(Map<String, String> hm, Map<String, Integer> coincidencias,
                                                      String poblacion) throws RegistroNoExistente {
         int max = 0;
         String codigo = "";
@@ -274,7 +271,14 @@ public class Parseo {
                 codigo = k;
             } else {
                 if (actual == max) {
-                    if (cuentaPalabras(buscarCodigoAPoblacion(k)) ==
+                    String nompob = "";
+                    for (String cl: hm.keySet()) {
+                        if (cl.equals(k)) {
+                            nompob = hm.get(cl);
+                            break;
+                        }
+                    }
+                    if (cuentaPalabras(nompob) ==
                             (cuentaPalabras(poblacion) - cuentaPreposiciones(poblacion))) {
                         codigo = k;
                     }
@@ -287,13 +291,12 @@ public class Parseo {
             throw new RegistroNoExistente();
         }
     }
-
 
     /*
      * Analiza la tabla de coincidencias y devuelve el código que tiene más coincidencias
      *
      */
-    public static String codResultTablaCoincidencias(Map<String, Integer> coincidencias,
+/*    public static String codResultTablaCoincidencias(Map<String, Integer> coincidencias,
                                                      String poblacion) throws RegistroNoExistente {
         int max = 0;
         String codigo = "";
@@ -317,7 +320,7 @@ public class Parseo {
             throw new RegistroNoExistente();
         }
     }
-
+*/
 
     /*
         usamos el api de maps con http.
@@ -365,7 +368,7 @@ public class Parseo {
     esquema:
     http://maps.google.com/maps/api/geocode/json?latlng=41.4833,2.0333&sensor=true
     */
-    public static Location getLocation(String localidad) throws FalloConexion, RegistroNoExistente {
+/*    public static Location getLocation(String localidad) throws FalloConexion, RegistroNoExistente {
         String urlLocalidad = "?address=" + sinAcentos(buscarCodigoAPoblacion(localidad))
                 + "," + sinAcentos(buscarCodigoAProvincia(localidad)) +"&sensor=true";
         String urlTotal = "http://maps.google.com/maps/api/geocode/json" + urlLocalidad.replace(" ", "+");
@@ -417,7 +420,7 @@ public class Parseo {
         }
         throw new RegistroNoExistente();
     }
-
+*/
 
     /*
      * Devuelve el número de palabras
@@ -497,7 +500,8 @@ public class Parseo {
                         "((^|\\s)L'($|\\s))|" +
                         "((^|\\s)N'($|\\s))|" +
                         "((^|\\s)D'($|\\s))";
-        String sinPreps = as.toUpperCase().replaceAll(patronPreposiciones, "");
+        String sinPreps = as.toUpperCase().replaceAll(patronPreposiciones, " ");
+        sinPreps.trim();
         return sinPreps;
     }
 }

@@ -21,9 +21,6 @@ import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import static com.corral.mityc.MitycRubi.COD_LOCALIDAD;
-import static com.corral.mityc.MitycRubi.COD_LOC_DRAWERLIST;
-
 /*********************************************************************************
  ************************** La acción a realizar cuando LocationPoblacionCentroIntentService
  ************************** tiene los datos preparados. (map listo) **************
@@ -46,8 +43,9 @@ public class LocationPoblacionCentroResultReceiver extends ResultReceiver {
         if (mitycRubi.getEstacionVer() == null) {
 
             // si necesitamos el mapa de una localidad distinta a la que estamos actualmente ...
-            if (((!COD_LOC_DRAWERLIST.equals(COD_LOCALIDAD)) && (resultCode == Constantes.SUCCESS_RESULT))) {
-                mAnotherLocation = (Location) resultData.getParcelable("location");
+            if ((!mitycRubi.NOM_LOC_DRAWERLIST.equalsIgnoreCase(mitycRubi.NOM_LOCALIDAD))
+                    && (resultCode == Constantes.SUCCESS_RESULT)) {
+                mAnotherLocation = resultData.getParcelable("location");
             }
 
             // si no conseguimos una localización precisa retornamos sin hacer nada.
@@ -55,18 +53,24 @@ public class LocationPoblacionCentroResultReceiver extends ResultReceiver {
                 return;
 
             // Si habíamos guardado de Provider el nombre de la población obtenido con GeoCodeHelper
-            if (!mAnotherLocation.getProvider().equals("fused")) {
-                mitycRubi.mostrarTituloBuscando(mAnotherLocation.getProvider());
+/*            if (!mAnotherLocation.getProvider().equals("fused")) {
+                mAnotherLocation.setProvider(mitycRubi.NOM_LOC_DRAWERLIST);
+                mitycRubi.NOM_LOC_DRAWERLIST = mAnotherLocation.getProvider();
+                mitycRubi.mostrarTituloBuscando(mitycRubi.NOM_LOC_DRAWERLIST);
                 mitycRubi.preparaListaMenuDrawer();
             }
+*/
+
             mitycRubi.getGoogleMap().addMarker(new MarkerOptions()
                     .position(new LatLng(mAnotherLocation.getLatitude(), mAnotherLocation.getLongitude()))
-                    .title(mitycRubi.getLastLocation().getProvider())); //buscarCodigoAPoblacion(COD_LOC_DRAWERLIST)));
+                    .title(mitycRubi.NOM_LOC_DRAWERLIST));
             cameraUpdate = CameraUpdateFactory.newLatLngZoom(
                     new LatLng(mAnotherLocation.getLatitude(), mAnotherLocation.getLongitude()), 12);
         } else {
+            Double lat = mitycRubi.getEstacionVer().getLocation().getLatitude();
+            Double lon = mitycRubi.getEstacionVer().getLocation().getLongitude();
             mitycRubi.getGoogleMap().addMarker(new MarkerOptions()
-                    .position(new LatLng(mitycRubi.getEstacionVer().getLocation().getLatitude(), mitycRubi.getEstacionVer().getLocation().getLongitude()))
+                    .position(new LatLng(lat, lon))
                     .title(mitycRubi.getEstacionVer().getNombre())).showInfoWindow();
             cameraUpdate = CameraUpdateFactory.newLatLngZoom(
                     new LatLng(mitycRubi.getEstacionVer().getLocation().getLatitude(), mitycRubi.getEstacionVer().getLocation().getLongitude()), 16);
@@ -95,6 +99,7 @@ public class LocationPoblacionCentroResultReceiver extends ResultReceiver {
             MapsInitializer.initialize(mitycRubi.getApplicationContext());
             // Updates the location and zoom of the MapView
             mitycRubi.getGoogleMap().moveCamera(cameraUpdate);
+
 
         } catch (Exception e) {
             e.printStackTrace();

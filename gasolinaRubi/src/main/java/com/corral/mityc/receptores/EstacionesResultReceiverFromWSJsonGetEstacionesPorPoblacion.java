@@ -42,13 +42,14 @@ public class EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion extends
                 mMitycRubi.getProgressBar().dismiss();
 
                 try {
+                    mMitycRubi.cambioPoblacion = false;
                     mMitycRubi.getViewPager().getAdapter().notifyDataSetChanged();
                 } catch (Exception e) {
                     // se produce al pulsar back button y volver a la aplicación.
                     e.printStackTrace();
                 }
                 mMitycRubi.mostrarTituloEncontrado(null);
-
+                mMitycRubi.cambioPoblacion = false;
             }
         }
     }

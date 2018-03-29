@@ -1,6 +1,7 @@
 package com.corral.mityc.estaciones;
 
 import android.location.Location;
+import android.support.annotation.NonNull;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ import java.util.List;
  * La clase Estacion contiene el nombre, dirección y una lista de los productos
  * que vende.
  */
-public class Estacion implements Serializable {
+public class Estacion implements Serializable, Comparable<Estacion> {
 
     /**
      * El nombre de la estación (Las multinacionales tienen el mismo siempre.
@@ -93,8 +94,10 @@ public class Estacion implements Serializable {
 
     /**
      * Añade un producto.  Si el producto ya existe, lo modifica.
+     * Si pvp es nulo , no hace nada.
      */
     public void addProducto(String nom, String pvp) {
+        if (pvp == null) return;
         Producto p = getProducto(nom);
         pvp = pvp.trim().replace("€", "").replace(",", ".");
         Float f;
@@ -123,5 +126,23 @@ public class Estacion implements Serializable {
     }
 
 
+    /**
+     * Compara en función del precio.
+     * Solo funciona si sólo hay un articulo, en caso contrario no puede decidir
+     * qué precio de qué artículo comparar.
+     * Es útil por que en Tabla precios se maneja una lista por producto, así que cada
+     * estación en esa lista contiene un sólo producto.
+     * @param o
+     * @return El resultado de comparar el precio
+     */
+    @Override
+    public int compareTo(@NonNull Estacion o) {
+        if ((o.getNumeroProductos() == 1) && (getNumeroProductos() == 1)) {
+            if (o.productos.get(0).getPrecio() == productos.get(0).getPrecio()) return 0;
+            return (o.productos.get(0).getPrecio() < productos.get(0).getPrecio())?1:-1;
+        } else {
+            return 0;
+        }
+    }
 }
 

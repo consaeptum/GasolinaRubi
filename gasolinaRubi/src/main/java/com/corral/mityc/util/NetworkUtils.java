@@ -15,7 +15,6 @@
  */
 package com.corral.mityc.util;
 
-import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 
@@ -25,8 +24,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Scanner;
-
-import static com.google.ads.AdRequest.LOGTAG;
 
 /**
  * Estas utilidades serán utilizadas para conectar con el servidor Mityc
@@ -57,6 +54,7 @@ public final class NetworkUtils {
         Uri mitycQueryUri = Uri.parse(MITYC_BASE_URL).buildUpon()
                 .appendPath(LISTADOS)
                 .appendPath(CONSULTA)
+                .appendPath(provincia)
                 .build();
 
         try {
@@ -116,6 +114,9 @@ public final class NetworkUtils {
             }
             scanner.close();
             return response;
+        } catch (Exception e) {
+            Log.v(TAG, "### error en consulta WS");
+            return null;
         } finally {
             urlConnection.disconnect();
         }

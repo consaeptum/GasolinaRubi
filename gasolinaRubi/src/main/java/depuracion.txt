@@ -121,3 +121,27 @@ ________________________________________________________________________________
                 MitycRubi, etc.
 
 
+15/mar/18   [X] Tras crear los métodos para leer los servicios web Json de Mityc y así obtener
+                las posiciones geograficas de las estaciones, ahora cuando se visualiza una población
+                distinta a la que nos encontremos actualmente, no se lee correctamente.
+                Al cambiar de población con MitycRubi cambioPoblacion() no se cambia.  Lee la
+                población actual.  Para corregirlo habrá que hacer que el archivo poblacions.csv
+                contenta únicamente los códigos de mityc WS, no los de scrapping.  Luego habrá que
+                asegurarse que CityNameResultReceiverFromGeocoder.onReceiveResult envíe el código
+                de la población selecciona y no la detectada por gps según corresponda.
+
+27/mar/18   [X] Cambiar el icono del Drawer al cerrar, en lugar de una flecha a la izquierda, poner
+                una X.
+
+27/mar/18   [ ] Al crear una nueva población, la muestra pero enseguida aparece de nuevo la población
+                en la que estamos en lugar de la que acabamos de seleccionar.
+
+27/mar/18   [ ] Aumentar el nivel de precisión de población, no debería encontrar sólo las ciudades
+                grandes, sinó trambién las pequeñas como La Floresta en lugar de Sant Cugat o
+                Barcelona - Sarrià en lugar de sólo Barcelona.  Aunque podría haber un problema
+                al buscar estaciones en el caso de Sarrià etc...
+
+27/mar/18   [ ] En algunas localización devuelve null como población.
+
+
+

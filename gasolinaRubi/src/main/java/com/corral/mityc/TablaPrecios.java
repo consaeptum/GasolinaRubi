@@ -20,6 +20,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -193,20 +194,22 @@ public class TablaPrecios implements Serializable {
 
                     Location l = new Location(nom.concat(dir));
                     try {
-                        l.setLatitude(Double.parseDouble(est.getString("Latitud")));
-                        l.setLongitude(Double.parseDouble(est.getString("Longitud_x0020__x0028_WGS84_x0029_")));
+                        l.setLatitude(Double.parseDouble(est.getString("Latitud").replace(',','.')));
+                        l.setLongitude(Double.parseDouble(est.getString("Longitud (WGS84)").replace(',','.')));
                     } catch (NumberFormatException nfe) {
                         l.setLatitude(0d);
                         l.setLongitude(0d);
                     }
+                    e.setLocation(l);
 
-                    alEstacion.add(e);
+                    if (e.getProducto(lp[1]).getPrecio() > 0) alEstacion.add(e);
                 }
 
             } catch (Exception e) {
                 bCache = true;
                 return false;
             }
+            Collections.sort(alEstacion);
         }
         // Si hay al menos una estación es correcto
         if (getTotalEstaciones() > 0) {

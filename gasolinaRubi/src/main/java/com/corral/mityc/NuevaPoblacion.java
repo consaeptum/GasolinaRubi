@@ -1,10 +1,16 @@
 package com.corral.mityc;
 
+import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
-import android.support.v7.app.AppCompatActivity;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.ResultReceiver;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,22 +19,35 @@ import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
 
-import com.corral.mityc.excepciones.RegistroNoExistente;
+import com.corral.mityc.servicios.WSJsonGetMunicipiosPorProvincia;
+import com.corral.mityc.util.NetworkUtils;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.corral.mityc.Parseo.*;
+import static com.corral.mityc.Parseo.buscarCodigoProvincia;
 
-public class NuevaPoblacion extends AppCompatActivity {
+//import static com.corral.mityc.Parseo.buscarCodigoPoblacion;
+
+public class NuevaPoblacion extends AppCompatActivity  {
+
+    private static final String TAG = NuevaPoblacion.class.getSimpleName();
 
     public static final String RESULTADO = "poblacion";
-    private static final float SWIPE_MIN_DISTANCE = 100;
+    private static ProgressDialog progressBar;
     ExpandableListAdapter listAdapter;
     ExpandableListView menuProvincias;
     List<String> listDataHeader;
     HashMap<String, List<String>> listDataChild;
+    String poblacion = "";
+    ResultReceiver rr;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,17 +67,21 @@ public class NuevaPoblacion extends AppCompatActivity {
             @Override
             public boolean onGroupClick(ExpandableListView parent, View v,
                                         int groupPosition, long id) {
-                preparaDatosGrupo(groupPosition);
-                return false;
+                if (listDataChild.get(listDataHeader.get(groupPosition)).isEmpty()) {
+                    preparaDatosGrupo(groupPosition);
+                    return true;
+                } else {
+                    return false;
+                }
             }
         });
+
 
         // Listview Group expanded listener
         menuProvincias.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
 
             @Override
             public void onGroupExpand(int groupPosition) {
-
             }
         });
 
@@ -76,28 +99,55 @@ public class NuevaPoblacion extends AppCompatActivity {
             @Override
             public boolean onChildClick(ExpandableListView parent, View v,
                                         int groupPosition, int childPosition, long id) {
-                // TODO Auto-generated method stub
-                Intent intent = new Intent();
+
                 String prov = listDataHeader.get(groupPosition);
                 String cprov = buscarCodigoProvincia(prov);
-                if (cprov.startsWith("0")) cprov = cprov.substring(1);
-                String pobl = listDataChild.get(prov).get(childPosition);
+                poblacion = listDataChild.get(prov).get(childPosition);
                 String cpob = null;
-                try {
-                    cpob = buscarCodigoPoblacion(cprov, pobl);
-                } catch (RegistroNoExistente rne) {
-                    setResult(RESULT_CANCELED);
-                    finish();
-                }
-                intent.putExtra(RESULTADO, cpob);
-                setResult(RESULT_OK,intent);
-                finish();
-                return false;
+                WSJsonGetMunicipiosPorProvincia.obtenMunicipio(rr, cprov, poblacion);
+                return true;
             }
         });
+
+        //
+        // cuando pidamos el código de la población a WSJsonGetMunicipiosPorProvincia, lo trataremos aquí.
+        //
+        rr = new ResultReceiver(new Handler()) {
+            @Override
+            protected void onReceiveResult(int resultCode, Bundle resultData) {
+                Intent intent = new Intent();
+                if (resultCode == Constantes.SUCCESS_RESULT) {
+                    String mCodigoMitycPoblacionResultado = resultData.getString(Constantes.RESULT_DATA_KEY);
+                    // Enviarmos un string con codigo#nombrePoblación a MitycRubi onActivityResult
+                    intent.putExtra(RESULTADO, mCodigoMitycPoblacionResultado.concat("#").concat(poblacion));
+                    setResult(RESULT_OK, intent);
+                    finish();
+
+                } else {
+                    // Enviarmos un string con codigo#nombrePoblación a MitycRubi onActivityResult
+                    intent.putExtra(RESULTADO, "" );
+                    setResult(Constantes.FAILURE_RESULT, intent);
+                    finish();
+                }
+
+            }
+        };
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getSupportActionBar().hide();
+    }
+    @Override
+    public void onStop() {
+        super.onStop();
+    getSupportActionBar().show();
     }
 
     private void preparaDatos() {
+
         listDataHeader = new ArrayList<String>();
         listDataChild = new HashMap<String, List<String>>();
 
@@ -107,9 +157,66 @@ public class NuevaPoblacion extends AppCompatActivity {
         }
     }
 
-    private void preparaDatosGrupo(int position) {
-        listDataChild.put(listDataHeader.get(position),
-                listaNomPobXProv(buscarCodigoProvincia(listDataHeader.get(position))));
+    private void preparaDatosGrupo(final int position) {
+
+        final String cpprov = Constantes.codigosProvincia[position][1];
+
+        progressBar = new ProgressDialog(this);
+        progressBar.setCancelable(true);
+        progressBar.setMessage("Cargando datos del Ministerio de Industria ...");
+        progressBar.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressBar.show();
+
+        @SuppressLint("StaticFieldLeak") AsyncTask<String, Void, String> mTask = new AsyncTask<String, Void, String>() {
+
+            protected String doInBackground(String... urls) {
+                String res;
+                try {
+                    res = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrlMuniciposPorProvincia(cpprov));
+                } catch (IOException e) {
+                    res = null;
+                    Log.v(TAG, "### : " + "AsyncTask.doInBackGround() getResponseFromHttpUrl error");
+                }
+                return res;
+            }
+
+            protected void onPostExecute(String result) {
+                HashMap<String, String> codMitycPobs = cargaMunicipios(result);
+                ArrayList<String> pbs = new ArrayList<String>(codMitycPobs.values());
+                Collections.sort(pbs);
+                listDataChild.put(listDataHeader.get(position), pbs);
+                progressBar.hide();
+                menuProvincias.expandGroup(position);
+            }
+
+
+            /*
+             * Carga la lista de Municipios para el código de provincia dado y lo devuelve
+             * en un HashMap<codigo_poblacion_de_mityc, nombre_población>
+             */
+            HashMap<String, String> cargaMunicipios(String result) {
+
+                HashMap<String, String> hm = new HashMap<String, String>();
+
+                try {
+                    JSONArray jsonArray = new JSONArray(result);
+
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject value = jsonArray.getJSONObject(i);
+                        hm.put(value.getString("IDMunicipio"), value.getString("Municipio"));
+                        Log.e("json", i + "=" + value);
+                    }
+
+                } catch (Exception e) {
+                    return null;
+                }
+                return hm;
+            }
+        };
+        mTask.execute();
+
+
+
     }
 
 

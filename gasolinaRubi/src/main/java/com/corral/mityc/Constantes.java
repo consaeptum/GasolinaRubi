@@ -1,7 +1,5 @@
 package com.corral.mityc;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 public class Constantes {
@@ -42,10 +40,10 @@ public class Constantes {
     public static final String SP95 = "SP95";
     public static final String SP98 = "SP98";
 
-    public static final String GA_JSON = "Precio_x0020_Gasoleo_x0020_A";
-    public static final String GAN_JSON = "Precio_x0020_Nuevo_x0020_Gasoleo_x0020_A";
-    public static final String SP95_JSON = "Precio_x0020_Gasolina_x0020_95_x0020_Protección";
-    public static final String SP98_JSON = "Precio_x0020_Gasolina_x0020__x0020_98";
+    public static final String GA_JSON = "Precio Gasoleo A";
+    public static final String GAN_JSON = "Precio Nuevo Gasoleo A";
+    public static final String SP95_JSON = "Precio Gasolina 95 Protección";
+    public static final String SP98_JSON = "Precio Gasolina  98";
 
 
     public static final String[][] LProductos = {
@@ -128,7 +126,7 @@ public class Constantes {
             {"ZARAGOZA", "50", "50"}
     };
 
-    public static final List<String[]> codigosPoblacion = new ArrayList<String[]>();
-    public static final String SHARED_LISTA_CODIGOS_POBLACIONES = "LISTA_POBLACIONES";
-
+    //public static final List<String[]> codigosPoblacion = new ArrayList<String[]>();
+    public static final String SHARED_LISTA_CODIGOS_POBLACIONES = "LISTA_COD_POBLACIONES";
+    public static final String SHARED_LISTA_NOMS_POBLACIONES = "LISTA_NOM_POBLACIONES";
 }
