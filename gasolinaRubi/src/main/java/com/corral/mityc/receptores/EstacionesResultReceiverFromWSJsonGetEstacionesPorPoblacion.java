@@ -1,12 +1,16 @@
 package com.corral.mityc.receptores;
 
 import android.annotation.SuppressLint;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
 
 import com.corral.mityc.Constantes;
 import com.corral.mityc.MitycRubi;
+import com.corral.mityc.R;
+
+import static android.content.Context.MODE_PRIVATE;
 
 /*
  * La acción a realizar cuando WSJsonGetMunicipiosPorProvincia
@@ -38,8 +42,13 @@ public class EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion extends
 
                 mMitycRubi.getTp().realizarPeticionJSON(mJSonEstacionesResult);
 
-                // detenemos la barra de progreso porque ya tenemos lo que buscabamos.
-                mMitycRubi.getProgressBar().dismiss();
+                mMitycRubi.getProgressBar().setMessage("Conseguido estaciones por población ...");
+
+                // guardamos la última localidad cargada en preferencias.
+                SharedPreferences sp = mMitycRubi.getSharedPreferences(mMitycRubi.getString(R.string.preferencias_mityc), MODE_PRIVATE);
+                SharedPreferences.Editor spe = sp.edit();
+                spe.putString(mMitycRubi.getString(R.string.preferencia_ultima_cod_pob), mMitycRubi.COD_LOC_DRAWERLIST);
+                spe.commit();
 
                 try {
                     mMitycRubi.cambioPoblacion = false;
@@ -48,9 +57,24 @@ public class EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion extends
                     // se produce al pulsar back button y volver a la aplicación.
                     e.printStackTrace();
                 }
-                mMitycRubi.mostrarTituloEncontrado(null);
+                mMitycRubi.mostrarTituloEncontrado(null, null);
                 mMitycRubi.cambioPoblacion = false;
+
+                // detenemos la barra de progreso porque ya tenemos lo que buscabamos.
+                mMitycRubi.getProgressBar().dismiss();
+
+                /*
+                 * Si es la primera vez que se ejecuta la aplicación, mostramos la ayuda.
+                 */
+                if (sp.getBoolean(mMitycRubi.getString(R.string.preferencia_primera_vez), true)) {
+                    mMitycRubi.mostrarAyuda();
+                }
+
+            } else {
+                mMitycRubi.infoFalloConexión(false);
             }
+        } else {
+            mMitycRubi.infoFalloConexión(false);
         }
     }
 }

@@ -26,46 +26,68 @@
             android:paddingTop="@dimen/appbar_padding_top"
             android:background="#d9b16b">
 
-            <android.support.v7.widget.Toolbar
+            <!-- app:layout_scrollFlags="scroll|enterAlways" -->
+
+                <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:layout_scrollFlags="scroll|enterAlways"
-                android:theme="@style/AppTheme">
+                android:layout_height="?android:attr/actionBarSize"
+                android:layout_gravity="left"
+                android:foregroundGravity="left"
+                android:gravity="left"
+                android:theme="@style/AppTheme"
+                app:navigationIcon="@drawable/ic_menu_black_24dp">
 
                 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
+                    android:layout_height="match_parent"
                     android:orientation="horizontal">
 
-                    <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
-                        android:id="@+id/imageIconDrawer"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:adjustViewBounds="false"
-                        android:paddingEnd="10dp"
-                        android:paddingRight="0dp"
-                        android:src="@drawable/drawer"
-                        app:srcCompat="?attr/actionModeCloseDrawable" />
-
-                    <com.corral.mityc.AutoResizeTextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:textColor="#843636"
-                        android:textStyle="bold"
-                        android:maxLines="1"
-                        android:textSize="500sp"
+                    <com.corral.mityc.util.AutoResizeTextView
                         android:id="@+id/titulo"
-                        android:layout_weight="6"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingRight="5dp"
+                        android:singleLine="false"
                         android:text=""
                         android:textAlignment="gravity"
-                        android:gravity="top|center"
-                        android:paddingBottom="5dp" />
+                        android:textColor="#843636"
+                        android:textSize="500sp"
+                        android:textStyle="bold" />
 
-                </LinearLayout>
-            </android.support.v7.widget.Toolbar>
+                    </LinearLayout>
+                </android.support.v7.widget.Toolbar>
+
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:id="@+id/titulo_barrio2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="top|center_horizontal"
+                    android:textSize="18sp"
+                    android:textStyle="bold|italic"
+                    android:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/titulo_barrio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:gravity="top|center_horizontal"
+                    android:textSize="18sp"
+                    android:textStyle="bold|italic"
+                    android:visibility="gone" />
+            </LinearLayout>
+
 
             <android.support.design.widget.TabLayout
                 android:id="@+id/tabs"
@@ -93,28 +115,42 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="50dp"
             android:orientation="horizontal"
             android:layout_marginTop="@dimen/activity_vertical_margin"
-            android:background="#cdd27c"
+            android:background="@android:color/holo_orange_dark"
             android:gravity="right">
 
+            <com.corral.mityc.util.AutoResizeTextView
+                android:id="@+id/tituloDrawer"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="10"
+                android:gravity="center_vertical|center_horizontal"
+                android:maxLines="1"
+                android:text=""
+                android:textAlignment="gravity"
+                android:textColor="#843636"
+                android:textSize="500sp"
+                android:textStyle="bold" />
+
             <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:src="@android:drawable/ic_delete"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="3"
+                android:src="@drawable/ic_chevron_left_black_24dp"
                 android:id="@+id/imageIconSwipeLeft"
                 android:adjustViewBounds="false"
-                android:layout_gravity="left"
-                android:background="#cdd27c"/>
+                android:layout_gravity="center_vertical"
+                android:background="@android:color/holo_orange_dark"/>
         </LinearLayout>
 
         <fragment
-            class="com.google.android.gms.maps.MapFragment"
             android:id="@+id/map"
             android:layout_width="240dp"
             android:layout_height="200dp"
-            tools:layout="@layout/fragment" />
+            tools:layout="@layout/fragment"
+            class="com.corral.mityc.util.MSupportMapFragment"/>
 
         <ListView android:id="@+id/left_drawer"
                 android:layout_width="240dp"
@@ -123,7 +159,7 @@
                 android:choiceMode="singleChoice"
                 android:divider="@android:color/transparent"
                 android:dividerHeight="0dp"
-                android:background="#111"/>
+                android:background="@android:color/black"/>
 
     </LinearLayout>
     </android.support.v4.widget.DrawerLayout>

@@ -32,7 +32,8 @@ public class Estacion implements Serializable, Comparable<Estacion> {
     /**
      * Latitud y longitud
      */
-    private Location location;
+    private transient Location location;
+    private double latitud, longitud;
 
     /**
      * Constructor
@@ -57,11 +58,15 @@ public class Estacion implements Serializable, Comparable<Estacion> {
     }
 
     public Location getLocation() {
+        location = new Location(getNombre());
+        location.setLatitude(latitud);
+        location.setLongitude(longitud);
         return location;
     }
 
     public void setLocation(Location location) {
-        this.location = location;
+        latitud = location.getLatitude();
+        longitud = location.getLongitude();
     }
 
 

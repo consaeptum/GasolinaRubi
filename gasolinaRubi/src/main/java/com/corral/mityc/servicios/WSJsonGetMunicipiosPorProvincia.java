@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.util.Log;
 
 import com.corral.mityc.Constantes;
 import com.corral.mityc.Parseo;
@@ -59,16 +58,19 @@ public class WSJsonGetMunicipiosPorProvincia {
                     res = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrlMuniciposPorProvincia(cpprov));
                 } catch (IOException e) {
                     res = null;
-                    Log.v(TAG, "### : " + "AsyncTask.doInBackGround() getResponseFromHttpUrl error");
                 }
                 return res;
             }
 
             protected void onPostExecute(String result) {
-                HashMap<String, String> codMitycPobs = cargaMunicipios(result);
+                HashMap<String, String> codMitycPobs;
+                String codigoMityc = null;
 
-                String codigoMityc = buscaPoblacion(codMitycPobs, poblacion);
-                NOM_LOC_DRAWERLIST = poblacion;
+                if (result != null) {
+                    codMitycPobs = cargaMunicipios(result);
+                    codigoMityc = buscaPoblacion(codMitycPobs, poblacion);
+                    NOM_LOC_DRAWERLIST = poblacion;
+                }
 
                 if ((result != null) && (codigoMityc != null)) {
                     Bundle bundle = new Bundle();
@@ -96,7 +98,6 @@ public class WSJsonGetMunicipiosPorProvincia {
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject value=jsonArray.getJSONObject(i);
                         hm.put(value.getString("IDMunicipio"), value.getString("Municipio"));
-                        Log.e("json", i+"="+value);
                     }
 
                 } catch (Exception e) {
@@ -117,14 +118,14 @@ public class WSJsonGetMunicipiosPorProvincia {
                 for (String codigoMityc: hm.keySet()) {
                     String pobMityc = Parseo.sinAcentos(hm.get(codigoMityc));
                     pobMityc = Parseo.quitarPreposiciones(pobMityc);
-                    hm.put(codigoMityc, pobMityc);
+                    hm.put(codigoMityc, pobMityc.trim());
                 }
 
                 // tenemos la lista de mityc (codigo, poblacion) en mayusculas, sin acentos ni
                 // preposiciones o articulos.  También pobABuscar.
                 String codigo;
                 try {
-                    codigo = Parseo.buscarCodigoPoblacionMityc(hm, pobABuscar);
+                    codigo = Parseo.buscarCodigoPoblacionMityc(hm, pobABuscar.trim());
                 } catch (RegistroNoExistente rne) {
                     codigo = null;
                 }

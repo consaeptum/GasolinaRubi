@@ -10,7 +10,6 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.util.Log;
 
 import com.corral.mityc.Constantes;
 import com.corral.mityc.receptores.LocationPoblacionCentroResultReceiver;
@@ -200,7 +199,6 @@ public class LocationPoblacionCentroIntentService extends IntentService {
                     if (loc != null)
                     {
                         // Do something with cityName
-                        Log.i("GeocoderHelperConAsync", loc.toString());
                         deliverResultToReceiver(Constantes.SUCCESS_RESULT, loc);
                     } else {
                         deliverResultToReceiver(Constantes.FAILURE_RESULT, null);

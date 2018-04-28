@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,6 +40,7 @@ public class NuevaPoblacion extends AppCompatActivity  {
 
     public static final String RESULTADO = "poblacion";
     private static ProgressDialog progressBar;
+    private static String provincia = "";
     ExpandableListAdapter listAdapter;
     ExpandableListView menuProvincias;
     List<String> listDataHeader;
@@ -55,6 +55,7 @@ public class NuevaPoblacion extends AppCompatActivity  {
         setContentView(R.layout.nueva_poblacion);
 
         menuProvincias = (ExpandableListView) findViewById(R.id.provinciaListView);
+        provincia = "";
 
         preparaDatos();
 
@@ -100,10 +101,9 @@ public class NuevaPoblacion extends AppCompatActivity  {
             public boolean onChildClick(ExpandableListView parent, View v,
                                         int groupPosition, int childPosition, long id) {
 
-                String prov = listDataHeader.get(groupPosition);
-                String cprov = buscarCodigoProvincia(prov);
-                poblacion = listDataChild.get(prov).get(childPosition);
-                String cpob = null;
+                provincia = listDataHeader.get(groupPosition);
+                String cprov = buscarCodigoProvincia(provincia);
+                poblacion = listDataChild.get(provincia).get(childPosition);
                 WSJsonGetMunicipiosPorProvincia.obtenMunicipio(rr, cprov, poblacion);
                 return true;
             }
@@ -121,6 +121,8 @@ public class NuevaPoblacion extends AppCompatActivity  {
                     // Enviarmos un string con codigo#nombrePoblación a MitycRubi onActivityResult
                     intent.putExtra(RESULTADO, mCodigoMitycPoblacionResultado.concat("#").concat(poblacion));
                     setResult(RESULT_OK, intent);
+                    MitycRubi.PROV_DRAWERLIST = provincia;
+                    MitycRubi.cambioPoblacion = true;
                     finish();
 
                 } else {
@@ -133,6 +135,15 @@ public class NuevaPoblacion extends AppCompatActivity  {
             }
         };
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Enviarmos un string con codigo#nombrePoblación a MitycRubi onActivityResult
+        Intent intent = new Intent();
+        intent.putExtra(RESULTADO, "" );
+        setResult(Constantes.FAILURE_RESULT, intent);
+        finish();
     }
 
     @Override
@@ -163,7 +174,7 @@ public class NuevaPoblacion extends AppCompatActivity  {
 
         progressBar = new ProgressDialog(this);
         progressBar.setCancelable(true);
-        progressBar.setMessage("Cargando datos del Ministerio de Industria ...");
+        progressBar.setMessage("Cargando datos de Mityc ...");
         progressBar.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressBar.show();
 
@@ -175,18 +186,25 @@ public class NuevaPoblacion extends AppCompatActivity  {
                     res = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrlMuniciposPorProvincia(cpprov));
                 } catch (IOException e) {
                     res = null;
-                    Log.v(TAG, "### : " + "AsyncTask.doInBackGround() getResponseFromHttpUrl error");
                 }
                 return res;
             }
 
             protected void onPostExecute(String result) {
-                HashMap<String, String> codMitycPobs = cargaMunicipios(result);
-                ArrayList<String> pbs = new ArrayList<String>(codMitycPobs.values());
-                Collections.sort(pbs);
-                listDataChild.put(listDataHeader.get(position), pbs);
-                progressBar.hide();
-                menuProvincias.expandGroup(position);
+                if (result != null) {
+                    HashMap<String, String> codMitycPobs = cargaMunicipios(result);
+                    ArrayList<String> pbs = new ArrayList<String>(codMitycPobs.values());
+                    Collections.sort(pbs);
+                    listDataChild.put(listDataHeader.get(position), pbs);
+                    progressBar.hide();
+                    menuProvincias.expandGroup(position);
+                } else {
+                    progressBar.hide();
+                    Intent intent = new Intent();
+                    intent.putExtra(RESULTADO, "" );
+                    setResult(Constantes.FAILURE_RESULT, intent);
+                    finish();
+                }
             }
 
 
@@ -204,7 +222,6 @@ public class NuevaPoblacion extends AppCompatActivity  {
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject value = jsonArray.getJSONObject(i);
                         hm.put(value.getString("IDMunicipio"), value.getString("Municipio"));
-                        Log.e("json", i + "=" + value);
                     }
 
                 } catch (Exception e) {

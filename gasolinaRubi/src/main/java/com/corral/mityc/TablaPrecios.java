@@ -7,25 +7,19 @@ import com.corral.mityc.estaciones.Estacion;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -225,94 +219,15 @@ public class TablaPrecios implements Serializable {
     }
 
 
-        /**
-         * método realizarPeticionHttp
-         * recibe tipoProducto según el LProductos[0]
-         * primero envía la petición, después comprueba si el código de status es
-         * correcto, en cuyo caso guarda en htmlRequest la página web leída.
-         * Si el status code es incorrecto, htmlRequest queda a None indicando que
-         * hubo error.
-         */
-    public synchronized boolean realizarPeticionHttp(String codLocalidad) {
-        iniciaResultados();
-        for (String[] lp: Constantes.LProductos) {
-            String urlTotal = Constantes.url1 + lp[0] + Constantes.urlLocalidad + codLocalidad;
-            ArrayList<Estacion> alEstacion = resultados.get(lp[1]);
-            try {
-                Connection.Response response = Jsoup.connect(urlTotal).method(Connection.Method.GET).execute();
-
-                String body = response.body();
-                BufferedReader reader = new BufferedReader(new StringReader(body));
-                String linea = null;
-                boolean inTabla = false;
-                String tabla = "";
-
-                Pattern patronNombre = Pattern.compile(".*href=.*>(.*)</a>");
-                Pattern patronDireccion = Pattern.compile(".*<td>(.*)</td>");
-                Pattern patronPrecio = Pattern.compile(".*<td><span>(.*)</span.*</td>");
-                Matcher m;
-                int nivel = 0;
-                String nom = "";
-                String dir = "";
-                String pvp = "";
-
-                while ((linea = reader.readLine()) != null) {
-                    if (linea.contains("<table class=\"tableResults\">")) {
-                        inTabla = true;
-                    }
-                    if (inTabla) {
-                        if (linea.contains("</table>")) break;
-
-                        m = patronNombre.matcher(linea);
-                        if (m.matches()) {
-                            nivel = 1;
-                            nom = m.group(1);
-                        }
-                        if (nivel == 1) {
-                            m = patronDireccion.matcher(linea);
-                            if (m.matches()) {
-                                nivel = 2;
-                                dir = m.group(1);
-                            }
-                        }
-                        if (nivel == 2) {
-                            m = patronPrecio.matcher(linea);
-                            if (m.matches()) {
-                                nivel = 0;
-                                pvp = m.group(1);
-                                Estacion e = new Estacion(nom, dir);
-                                e.addProducto(lp[1], pvp);
-                                alEstacion.add(e);
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                bCache = true;
-                return false;
-            }
-        }
-        // Si hay al menos una estación es correcto
-        if (getTotalEstaciones() > 0) {
-            guardaCache(codLocalidad);
-            bCache = false;
-            return true;
-
-        // Si no hay ninguna estación, es que se inicio resultados y continúa vacío.
-        } else {
-            bCache = true;
-            return false;
-        }
-    }
 
     /**
      * guarda resultados serializado en el fichero "<codLocalidad>.cache"
      */
-    private Boolean guardaCache(String localidad) {
+    private Boolean guardaCache(String codlocalidad) {
         FileOutputStream fos;
         ObjectOutputStream os;
         try {
-            fos = contexto.openFileOutput(localidad + ".cache", contexto.MODE_PRIVATE);
+            fos = contexto.openFileOutput(codlocalidad + ".cache", contexto.MODE_PRIVATE);
             os = new ObjectOutputStream(fos);
             os.writeObject(resultados);
             os.close();

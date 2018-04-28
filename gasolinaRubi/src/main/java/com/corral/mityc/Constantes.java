@@ -129,4 +129,5 @@ public class Constantes {
     //public static final List<String[]> codigosPoblacion = new ArrayList<String[]>();
     public static final String SHARED_LISTA_CODIGOS_POBLACIONES = "LISTA_COD_POBLACIONES";
     public static final String SHARED_LISTA_NOMS_POBLACIONES = "LISTA_NOM_POBLACIONES";
+    public static final String SHARED_LISTA_PROV_POBLACIONES = "LISTA_PROV_POBLACIONES";
 }

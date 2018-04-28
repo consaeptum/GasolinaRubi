@@ -43,6 +43,8 @@ public class LocationEstacionResultReceiverFromGeocoder extends ResultReceiver {
             MapFragment mapFragment = (MapFragment) mitycRubi.getFragmentManager().findFragmentById(R.id.map);
             mapFragment.getMapAsync(omrc);
 
+        } else {
+            mitycRubi.infoFalloConexión(false);
         }
     }
 }

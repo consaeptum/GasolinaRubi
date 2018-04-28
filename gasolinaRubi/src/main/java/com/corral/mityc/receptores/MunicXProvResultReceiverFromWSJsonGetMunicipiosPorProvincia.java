@@ -34,6 +34,8 @@ public class MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia extends
             // acción a realizar cuando ya tenemos el código de la población de mityc
             if (mCodigoMitycPoblacionResultado != null) {
 
+                mMitycRubi.getProgressBar().setMessage("Asociando código de municipio en Mityc ...");
+
                 //mMitycRubi.COD_LOCALIDAD = mCodigoMitycPoblacionResultado;
                 mMitycRubi.COD_LOC_DRAWERLIST = mCodigoMitycPoblacionResultado;
 
@@ -44,7 +46,11 @@ public class MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia extends
                 EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion eRRfWSExP =
                         new EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion(new Handler(), mMitycRubi);
                 mWSJE.obtenEstaciones(eRRfWSExP, mMitycRubi, mCodigoMitycPoblacionResultado);
+            } else {
+                mMitycRubi.infoFalloConexión(false);
             }
+        } else {
+            mMitycRubi.infoFalloConexión(false);
         }
     }
 }

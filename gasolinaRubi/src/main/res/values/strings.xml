@@ -15,6 +15,8 @@
     <string name="drawer_close">drawer_close</string>
     <string name="title_activity_nueva_poblacion">Settings</string>
 
+    <string name="otras_poblaciones">Otras Poblaciones</string>
+
     <!-- Strings related to Settings -->
 
     <!-- Example General settings -->
@@ -76,4 +78,19 @@
     <string name="title_activity_splash">SplashActivity</string>
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
+
+    <!-- Permisos de la aplicación -->
+    <string name="sinpermiso">Si la aplicación no tiene permiso para acceder a la posición geografica, no funcionará correctamente</string>
+    <string name="sinpermisoRechazado">SE HA RECHAZADO LOS PERMISOS NECESARIOS PARA EJECUTAR LA APLICACION</string>
+    <string name="sinpermisoRechazadoPermanente">SE HA RECHAZADO LOS PERMISOS NECESARIOS PARA EJECUTAR LA APLICACION DE FORMA PERMANENTE</string>
+    <string name="inform_permisos">PERMISOS DE POSICIONAMIENTO GEOGRAFICO</string>
+    <string name="preferencias_mityc">preferencias_mityc</string>
+    <string name="preferencia_ultima_cod_pob">ultima_cod_pob</string>
+    <string name="preferencia_primera_vez">primera_vez</string>
+    <string name="inform_permisos_text">Si no se conceden los permisos necesarios, la aplicación no funcionará correctamente.</string>
+    <string name="inform_conexion">Hubo un problema de conexión</string>
+    <string name="inform_conexion_text_red">Compruebe que tiene activada la transmisión de datos.</string>
+    <string name="inform_conexion_text_gps">Comprueba que tiene activada la detección de su ubicación.</string>
+
+
 </resources>

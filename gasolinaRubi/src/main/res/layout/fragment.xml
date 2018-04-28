@@ -53,14 +53,16 @@
         android:layout_height="match_parent"
         android:paddingLeft="3dp"
         android:paddingRight="2dp"
+
         android:layout_below="@+id/linearLayout"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="20dp">
+        >
 
         <TableLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/table_layout">
+            android:id="@+id/table_layout"
+            android:paddingBottom="6dp">
         </TableLayout>
     </ScrollView>
 

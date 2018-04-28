@@ -8,11 +8,9 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.util.Log;
 
 import com.corral.mityc.Constantes;
-import com.corral.mityc.Parseo;
-import com.corral.mityc.estaciones.Estacion;
+import com.corral.mityc.MitycRubi;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,8 +22,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /*
@@ -54,7 +50,9 @@ public class GeocoderHelperConAsynctask
         // guardamos el Receiver para enviar el resultado en onPostExecute()
         mReceiver = rr;
 
-        if (running)
+        ((MitycRubi) contex).getProgressBar().setMessage("Obteniendo población por coordenadas geográficas ...");
+
+        if (running || location == null)
             return;
 
         mTask = new AsyncTask<Void, Void, String>()
@@ -74,15 +72,30 @@ public class GeocoderHelperConAsynctask
                     try
                     {
                         Geocoder geocoder = new Geocoder(contex, Locale.getDefault());
-                        List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                        List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 5);
                         if (addresses.size() > 0)
                         {
-                            cityNameCP = addresses.get(0).getLocality() + " " + addresses.get(0).getPostalCode();
+                            String cn = null; // población
+                            String cs = null; // barrio
+                            String cp = null; // código postal
+                            for (Address a: addresses) {
+                                if (cn == null) {
+                                    cn = a.getLocality();
+                                    cp = a.getPostalCode();
+                                }
+                                if (cs == null) {
+                                    String n = a.getSubLocality();
+                                    if (n != null) cs = a.getFeatureName();
+                                }
+                                if (cn != null && cs != null && cp != null) break;
+                            }
+                            cityNameCP = cn + "#" + cs + "#" + cp;
                         }
                     }
                     catch (Exception ignored)
                     {
-                        // after a while, Geocoder start to trhow "Service not availalbe" exception. really weird since it was working before (same device, same Android version etc..
+                        // si algo falla intentaremos usar fetchCityNameUsingGoogleMap
+                        // Así que no es necesario hacer nada con esta excepción.
                     }
                 }
 
@@ -100,7 +113,8 @@ public class GeocoderHelperConAsynctask
             // Our B Plan : Google Map
             private String fetchCityNameUsingGoogleMap()
             {
-                String googleMapUrl = "http://maps.googleapis.com/maps/api/geocode/json?latlng=" + location.getLatitude() + ","
+                String googleMapUrl = "http://maps.googleapis.com/maps/api/geocode/json?latlng="
+                        + location.getLatitude() + ","
                         + location.getLongitude() + "&sensor=false&language=es";
 
                 try
@@ -121,6 +135,7 @@ public class GeocoderHelperConAsynctask
                     JSONObject googleMapResponse = new JSONObject(sb.toString());
 
                     String cn = null;   // población
+                    String cs = null;   // barrio
                     String cp = null;   // código postal
 
                     // many nested loops.. not great -> use expression instead
@@ -156,15 +171,15 @@ public class GeocoderHelperConAsynctask
                                                 cn = addressComponent.getString("short_name");
                                             }
                                         }
-                                        if ("sublocality".equals(types.getString(k)))
+                                        if ("route".equals(types.getString(k)) && cs == null)
                                         {
                                             if (addressComponent.has("long_name"))
                                             {
-                                                cn = addressComponent.getString("long_name");
+                                                cs = addressComponent.getString("long_name");
                                             }
                                             else if (addressComponent.has("short_name"))
                                             {
-                                                cn = addressComponent.getString("short_name");
+                                                cs = addressComponent.getString("short_name");
                                             }
                                         }
 
@@ -182,14 +197,14 @@ public class GeocoderHelperConAsynctask
                                         }
 
                                     }
-                                    if ((cn != null) && (cp != null))
-                                    {
-                                        return cn + " " +  cp;
-                                    }
                                 }
                             }
                         }
                     }
+                    if (cn != null && cp != null)
+                        return cn + "#" + cs + "#" +  cp;
+                    else
+                        return null;
                 }
                 catch (Exception ignored)
                 {
@@ -203,9 +218,7 @@ public class GeocoderHelperConAsynctask
                 running = false;
                 if (cityName != null)
                 {
-                    // Do something with cityName
-                    Log.i("GeocoderHelperConAsync", cityName);
-
+                    // retornamos ciudad#barrio#codigoPostal
                     Bundle bundle = new Bundle();
                     bundle.putString(Constantes.RESULT_DATA_KEY, cityName);
                     mReceiver.send(Constantes.SUCCESS_RESULT, bundle);
@@ -217,151 +230,4 @@ public class GeocoderHelperConAsynctask
             }
         }.execute();
     }
-
-    @SuppressLint("StaticFieldLeak")
-    public void fetchLocationFromPoblacion(final Context contex, ResultReceiver rr, final Estacion estacion)
-    {
-        // guardamos el Receiver para enviar el resultado en onPostExecute()
-        mReceiver = rr;
-
-        if (running)
-            return;
-
-        new AsyncTask<Void, Void, Location>()
-        {
-            Location location = null;
-
-            protected void onPreExecute()
-            {
-                running = true;
-            };
-
-            @Override
-            protected Location doInBackground(Void... params)
-            {
-                if (Geocoder.isPresent())
-                {
-                    try
-                    {
-                        Geocoder geocoder = new Geocoder(contex, Locale.getDefault());
-                        List<Address> addresses;
-                        addresses = geocoder.getFromLocationName(estacion.getDireccion(),5);
-                        location = new Location("");
-                        location.setLatitude(addresses.get(0).getLatitude());
-                        location.setLongitude(addresses.get(0).getLongitude());
-                    }
-                    catch (Exception ignored)
-                    {
-                        // after a while, Geocoder start to trhow "Service not availalbe" exception. really weird since it was working before (same device, same Android version etc..
-                    }
-                }
-
-                if (location != null) // i.e., Geocoder succeed
-                {
-                    return location;
-                }
-                else // i.e., Geocoder failed
-                {
-                    return fetchLocationUsingGoogleMap();
-                }
-            }
-
-            // Geocoder failed :-(
-            // Our B Plan : Google Map
-            private Location fetchLocationUsingGoogleMap()
-            {
-                String googleMapUrl = "";
-                try
-                {
-                    // la dirección en Mityc contiene espacios de más y comas que podrían ser
-                    // prescindibles.  Podría depurarse para mejorar el reconocimiento de la
-                    // dirección.
-
-                    // no reconoce carretera+e-9+km.+14,9,+rubi entre otros...
-
-// movemos en direccion la poblacion al principio
-// poblacion,direccion
-                    String direccion = estacion.getDireccion();
-                    Pattern pattern = Pattern.compile("^(.*),(.*)$");
-                    Matcher matcher = pattern.matcher(direccion);
-                    if (matcher.find())
-                    {
-                        direccion = "barcelona," + matcher.group(2).trim() + "," + matcher.group(1).replace(","," ");
-                    }
-
-                    String direc = Parseo.sinAcentos(direccion.replace(" ", "+"));
-                    googleMapUrl = "http://maps.googleapis.com/maps/api/geocode/json?address=" + direc + "&sensor=false&language=es";
-                    URL url = new URL(googleMapUrl);
-                    URLConnection urlCon = url.openConnection();
-                    urlCon.connect();
-                    InputStream datos = urlCon.getInputStream();
-
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-
-                    BufferedReader br = new BufferedReader(new InputStreamReader(datos));
-                    while ((line = br.readLine()) != null) {
-                        sb.append(line);
-                    }
-
-                    JSONObject googleMapResponse = new JSONObject(sb.toString());
-
-                    String lat = null;   // población
-                    String lon = null;   // código postal
-
-                    // many nested loops.. not great -> use expression instead
-                    // loop among all results
-                    JSONArray results = (JSONArray) googleMapResponse.get("results");
-                    for (int i = 0; i < results.length(); i++)
-                    {
-                        // loop among all addresses within this result
-                        JSONObject result = results.getJSONObject(i);
-                        if (result.has("geometry"))
-                        {
-                            JSONObject geometry = result.getJSONObject("geometry");
-
-                                if (geometry.has("location")) {
-                                    JSONObject location = geometry.getJSONObject("location");
-                                    lat = location.getString("lat");
-                                    lon = location.getString("lng");
-                                }
-                            }
-
-                    }
-                    if ((lat != null) && (lon != null)) {
-                        location = new Location("");
-                        location.setLatitude(Double.parseDouble(lat));
-                        location.setLongitude(Double.parseDouble(lon));
-                        estacion.setLocation(location);
-                        return location;
-                    }
-
-                }
-                catch (Exception ignored)
-                {
-                    ignored.printStackTrace();
-                }
-                return null;
-            }
-
-            protected void onPostExecute(Location loc)
-            {
-                running = false;
-                if (loc != null)
-                {
-                    // Do something with cityName
-                    Log.i("GeocoderHelperConAsync", loc.toString());
-
-                    Bundle bundle = new Bundle();
-                    bundle.putSerializable(Constantes.RESULT_DATA_KEY, estacion);
-                    mReceiver.send(Constantes.SUCCESS_RESULT, bundle);
-                } else {
-                    Bundle bundle = new Bundle();
-                    bundle.putSerializable(Constantes.RESULT_DATA_KEY, estacion);
-                    mReceiver.send(Constantes.FAILURE_RESULT, bundle);
-                }
-            };
-        }.execute();
-    }
-
 }

@@ -16,7 +16,6 @@
 package com.corral.mityc.util;
 
 import android.net.Uri;
-import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,7 +58,6 @@ public final class NetworkUtils {
 
         try {
             URL mitycQueryUrl = new URL(mitycQueryUri.toString());
-            Log.v(TAG, "### URL: " + mitycQueryUrl);
             return mitycQueryUrl;
         } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -83,10 +81,8 @@ public final class NetworkUtils {
 
         try {
             URL mitycQueryUrl = new URL(mitycQueryUri.toString());
-            Log.v(TAG, "### URL: " + mitycQueryUrl);
             return mitycQueryUrl;
         } catch (MalformedURLException e) {
-            Log.v(TAG, "### URL: + e.printStackTrace()");
             e.printStackTrace();
             return null;
         }
@@ -115,7 +111,6 @@ public final class NetworkUtils {
             scanner.close();
             return response;
         } catch (Exception e) {
-            Log.v(TAG, "### error en consulta WS");
             return null;
         } finally {
             urlConnection.disconnect();

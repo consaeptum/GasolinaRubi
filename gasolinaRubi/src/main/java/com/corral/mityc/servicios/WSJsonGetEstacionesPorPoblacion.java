@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.util.Log;
 
 import com.corral.mityc.Constantes;
 import com.corral.mityc.MitycRubi;
@@ -48,6 +47,7 @@ public class WSJsonGetEstacionesPorPoblacion {
 
         if (running) return;
 
+        mMitycRubi.getProgressBar().setMessage("Obteniendo estaciones por población ...");
         mTask = new AsyncTask<String, Void, String>() {
 
             protected String doInBackground(String... urls) {
@@ -56,7 +56,6 @@ public class WSJsonGetEstacionesPorPoblacion {
                     res = NetworkUtils.getResponseFromHttpUrl(NetworkUtils.buildUrlEstacionesPorPoblacion(codigoPob));
                 } catch (IOException e) {
                     res = null;
-                    Log.v(TAG, "### : " + "AsyncTask.doInBackGround() getResponseFromHttpUrl error");
                 }
                 return res;
 

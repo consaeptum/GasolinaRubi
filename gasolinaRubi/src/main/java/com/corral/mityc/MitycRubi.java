@@ -2,15 +2,19 @@ package com.corral.mityc;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -22,14 +26,12 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -52,10 +54,12 @@ import com.corral.mityc.receptores.CityNameResultReceiverFromGeocoder;
 import com.corral.mityc.receptores.EstacionesResultReceiverFromWSJsonGetEstacionesPorPoblacion;
 import com.corral.mityc.receptores.LocationEstacionResultReceiverFromGeocoder;
 import com.corral.mityc.receptores.LocationPoblacionCentroResultReceiver;
-import com.corral.mityc.receptores.ScrapWebMitycReceiver;
 import com.corral.mityc.servicios.GeocoderHelperConAsynctask;
 import com.corral.mityc.servicios.LocationPoblacionCentroIntentService;
 import com.corral.mityc.servicios.WSJsonGetEstacionesPorPoblacion;
+import com.corral.mityc.util.AutoResizeTextView;
+import com.github.amlcurran.showcaseview.ShowcaseView;
+import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -82,8 +86,6 @@ import java.util.logging.Logger;
 
 import static android.support.v4.view.ViewPager.LayoutParams.MATCH_PARENT;
 import static com.corral.mityc.MitycRubi.PlaceholderFragment.omrc;
-import static com.corral.mityc.R.id.container;
-import static com.google.ads.AdRequest.LOGTAG;
 
 //import static com.corral.mityc.Parseo.cargaCodigosPoblacion;
 
@@ -112,7 +114,7 @@ public class MitycRubi extends AppCompatActivity implements
     private static final Logger log = Logger.getLogger(Constantes.class.getName());
     private static final int RESULT_COD_POB = 1;
     public static final Integer PETICION_CONFIG_UBICACION = 1024;
-    private static final int PERMISSION_REQUEST_LOCATION = 0;
+    private static final int PETICION_PERMISO_MULTIPLE = 0;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -138,11 +140,18 @@ public class MitycRubi extends AppCompatActivity implements
     public static String COD_LOC_DRAWERLIST = "";
     public static String NOM_LOCALIDAD = "";
     public static String NOM_LOC_DRAWERLIST = "";
+    public static String SUBNOM_LOC_DRAWERLIST = "";
+    public static String PROV_DRAWERLIST = "";
     public static Boolean cambioPoblacion = false;
 
     private String listaCodPoblaciones;
     private String listaNomPoblaciones;
-    private static DrawerLayout mDrawerLayout;
+    private String listaProvPoblaciones;
+    public static DrawerLayout mDrawerLayout;
+
+    // controlamos el bloqueo al borrar una población con esta variable
+    private static Boolean bloqueo = false;
+
     private ListView mDrawerList;
     public OnMapReadyCallback mapCallBack = this;
 
@@ -152,7 +161,6 @@ public class MitycRubi extends AppCompatActivity implements
      */
     private static TablaPrecios tp;
 
-    private ScrapWebMitycReceiver mScrappingScrapWebMitycReceiver;
     private CityNameResultReceiverFromGeocoder mCityNameResultReceiverFromGeocoder;
     private LocationPoblacionCentroResultReceiver mLocationPoblacionCentroResultReceiver;
     private Location mLastLocation;
@@ -174,6 +182,7 @@ public class MitycRubi extends AppCompatActivity implements
     private android.app.Fragment staticFragment;
     private static MapFragment mapFragment;
 
+
     /*******************************************************************************
      ************************** Métodos del interfaz LocationListener **************
      *******************************************************************************/
@@ -192,13 +201,24 @@ public class MitycRubi extends AppCompatActivity implements
     @Override
     public void onMapReady(GoogleMap gMap) {
         googleMap = gMap;
-        if ((mLastLocation != null) && (!COD_LOC_DRAWERLIST.isEmpty())) {
+        //if ((mLastLocation != null) && (!COD_LOC_DRAWERLIST.isEmpty())) {
+        if (!COD_LOC_DRAWERLIST.isEmpty()) {
 
             prepararDrawerList();
             // iniciamos servicio de coordenadas de otra población para no usar este hilo
             // al consultar las coordenadas via http.
-            mLocationPoblacionCentroResultReceiver = new LocationPoblacionCentroResultReceiver(new Handler(), this);
-            LocationPoblacionCentroIntentService.startAction(this, mLocationPoblacionCentroResultReceiver, null, NOM_LOC_DRAWERLIST);
+            //if (getEstacionVer() == null) {
+                mLocationPoblacionCentroResultReceiver = new LocationPoblacionCentroResultReceiver(new Handler(), this);
+
+
+// ATENCIONA PONER LA PROVINCIA PARA EVITAR ERRORES
+                LocationPoblacionCentroIntentService.startAction(this,
+                        mLocationPoblacionCentroResultReceiver,
+                        (PROV_DRAWERLIST != null && !PROV_DRAWERLIST.isEmpty())? PROV_DRAWERLIST: null,
+                        NOM_LOC_DRAWERLIST);
+            //} else {
+                //setEstacionVer(null);
+            //}
         }
 
     }
@@ -212,6 +232,7 @@ public class MitycRubi extends AppCompatActivity implements
      *******************************************************************************/
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        infoFalloConexión(true);
     }
 
 
@@ -224,13 +245,24 @@ public class MitycRubi extends AppCompatActivity implements
      */
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        if (permisosGps())
-            enableLocationUpdates();
+
+        // Cuando creamos una nueva población en la clase NuevaPoblacion, después de enviar
+        // el Result a la activity MitycRubi, se llama a finish y MitycActivity llama a onRestart.
+        // En onRestart se llama a ConectarApiGoogle, pero como en este caso queremos mantener
+        // la población seleccionada y no ver la localización donde estamos, evitamos llamar a
+        // enableLocationUpdates si cambioPoblación es verdadero.
+        if (locationEnabled()) {
+            if (permisosGps() && !cambioPoblacion)
+                enableLocationUpdates();
+        } else {
+            infoFalloConexión(true);
+        }
     }
 
 
     @Override
     public void onConnectionSuspended(int i) {
+
     }
 
 
@@ -242,6 +274,10 @@ public class MitycRubi extends AppCompatActivity implements
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mityc_tab);
+        Toolbar tb = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(tb);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+
 
         // contexto y mLocationEstacionResultReceiverFromGeocoder se inicializan aquí porque en otras
         // partes del código al ser static no lo permite.
@@ -250,23 +286,40 @@ public class MitycRubi extends AppCompatActivity implements
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         tp = new TablaPrecios(this);
-
         listaCodPoblaciones = getListaCodPoblaciones()[0];
 
-        ImageView iconDrawer = (ImageView) findViewById(R.id.imageIconDrawer);
-        View.OnClickListener mToggleDrawerButton = new View.OnClickListener() {
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
-            public void onClick(View v) {
-                MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
-                mapFragment.getMapAsync(omrc);
+            public void onDrawerSlide(View drawerView, float slideOffset) {
 
-                mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-                mDrawerLayout.openDrawer(Gravity.LEFT);
-                // evita que se cierre el DrawerLayout al moverse por el mapa.
-                mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN);
-                prepararDrawerList();
             }
-        };
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+
+                if (getEstacionVer() == null) {
+                    MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+                    mapFragment.getMapAsync(omrc);
+                    mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+                    mDrawerLayout.openDrawer(Gravity.LEFT);
+                    prepararDrawerList();
+                }
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                if (getEstacionVer() != null) {
+                    setEstacionVer(null);
+                    prepararDrawerList();
+                }
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+
+            }
+        });
 
         ImageView iconDrawerClose = (ImageView) findViewById(R.id.imageIconSwipeLeft);
         iconDrawerClose.setOnClickListener(new View.OnClickListener() {
@@ -277,9 +330,27 @@ public class MitycRubi extends AppCompatActivity implements
             }
         });
 
-        iconDrawer.setOnClickListener(mToggleDrawerButton);
+        // Create the adapter that will return a fragment for each of the three
+        // primary sections of the activity.
+        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
-        /* especificamos que hacer cuando encuentra una localización */
+        // Set up the ViewPager with the sections adapter.
+        mViewPager = (ViewPager) findViewById(R.id.container);
+        mViewPager.setAdapter(mSectionsPagerAdapter);
+        // evita que se cargue los Tab cada vez que se cambie de Tab.
+        mViewPager.setOffscreenPageLimit(4);
+
+        TabLayout tabLayout;
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
+        tabLayout.setupWithViewPager(mViewPager);
+        mSectionsPagerAdapter.notifyDataSetChanged();
+
+        staticFragment = getFragmentManager().findFragmentById(R.id.map);
+
+        // guardamos el mapFragment para poder acceder a él desde clickEnEstacion()
+        mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+
+        // especificamos que hacer cuando encuentra una localización
         mlocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
@@ -288,28 +359,16 @@ public class MitycRubi extends AppCompatActivity implements
                     localizacionConseguida(location);
                     break;
                 }
-            };
+            }
         };
 
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(container);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-        // evita que se cargue los Tab cada vez que se cambie de Tab.
-        mViewPager.setOffscreenPageLimit(4);
-
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(mViewPager);
-
-        //mScrappingScrapWebMitycReceiver = new ScrapWebMitycReceiver(this);
-
-        staticFragment = getFragmentManager().findFragmentById(R.id.map);
-
-        // guardamos el mapFragment para poder acceder a él desde clickEnEstacion()
-        mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+        SharedPreferences sp = getSharedPreferences(getString(R.string.preferencias_mityc), MODE_PRIVATE);
+        String codpob = sp.getString(getString(R.string.preferencia_ultima_cod_pob), "");
+        if ((!codpob.isEmpty()) && (tp != null)) {
+            if (tp.recuperaCache(codpob, this) != null) {
+                mViewPager.getAdapter().notifyDataSetChanged();
+            }
+        }
 
         conectarApiGoogle();
     }
@@ -326,31 +385,54 @@ public class MitycRubi extends AppCompatActivity implements
                 String[] res = data.getStringExtra(NuevaPoblacion.RESULTADO).split("#");
                 String codpob = res[0];
                 String nompob = res[1];
+                String nomprov = PROV_DRAWERLIST;   // En NuevaPoblación se modifica PROV_DRAWERLIST
                 String codigos = getListaCodPoblaciones()[0];
                 String nombres = getListaCodPoblaciones()[1];
+                String provincias = getListaCodPoblaciones()[2];
 
-                if (!codigos.isEmpty()) codigos = codigos.concat("#");
-                codigos = codigos.concat(codpob);
+                /*
+                 * Evitamos añadir una población ya añadida previamente.
+                 */
+                if (!nombres.contains(nompob)) {
+                    if (!codigos.isEmpty()) codigos = codigos.concat("#");
+                    codigos = codigos.concat(codpob);
 
-                if (!nombres.isEmpty()) nombres = nombres.concat("#");
-                nombres = nombres.concat(nompob);
+                    if (!nombres.isEmpty()) nombres = nombres.concat("#");
+                    nombres = nombres.concat(nompob);
 
-                setListaCodPoblaciones(new String[] {codigos, nombres});
+                    if (!provincias.isEmpty()) provincias = provincias.concat("#");
+                    provincias = provincias.concat(nomprov);
+
+                    setListaCodPoblaciones(new String[]{codigos, nombres, provincias});
+                }
+
                 COD_LOC_DRAWERLIST = codpob;
                 NOM_LOC_DRAWERLIST = nompob;
 
+                MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+                mapFragment.getMapAsync(omrc);
+
                 // cambiamos población a la última recién introducida
                 cambioPoblacion(codigos.split("#").length);
+
+            } else {
+
+                // Al volver de NuevaPoblacion, el Toolbar se oculta y aquí forzamos que vuelva
+                // a aparecer.
+                Toolbar tb = (Toolbar) findViewById(R.id.toolbar);
+                tb.setVisibility(View.VISIBLE);
             }
         }
+
         if (requestCode == PETICION_CONFIG_UBICACION) {
             switch (resultCode) {
                 case Activity.RESULT_OK:
                     startLocationUpdates();
                     break;
-                case Activity.RESULT_CANCELED:
-                    Log.i(LOGTAG, "El usuario no ha realizado los cambios de configuración necesarios");
+                default:
+                    infoFalloConexión(false);
                     break;
+
             }
         }
     }
@@ -358,17 +440,17 @@ public class MitycRubi extends AppCompatActivity implements
     @Override
     protected void onStart() {
         super.onStart();
+
+        /*
+         * llamamos a conectarApiGoogle desde aquí para evitar hacerlo en onCreate, de modo que
+         * en onCreate mostramos la última localidad cargada sin que se vea afectado el tiempo
+         * de mostrar los componentes visuales de la activity.
+         */
+        //conectarApiGoogle();
     }
 
     @Override
     public void onDestroy() {
-
-        try {
-            unregisterReceiver(mScrappingScrapWebMitycReceiver);
-        } catch (Exception e) {
-            //Log.e("onPause", e.getMessage());
-        }
-
         super.onDestroy();
     }
 
@@ -376,16 +458,16 @@ public class MitycRubi extends AppCompatActivity implements
     protected void onResume() {
         super.onResume();
 
-        // recargamos los códigos de población.
-/*        if (Constantes.codigosPoblacion == null)
-            cargaCodigosPoblacion(this);
-*/
+        /*
+         * conectamos el cliente de geolocalización.
+         * Controlamos que mGoogleApiClient no sea null, ya que si es la primera ejecución
+         * se mostraría la ayuda y llamaríamos a conectarApiGoogle más tarde.
+         */
+        if ((!cambioPoblacion) && (mGoogleApiClient != null) && (!mGoogleApiClient.isConnected())) {
+            mGoogleApiClient.connect();
+        }
 
-        // conectamos el cliente de geolocalización.
-            if (!mGoogleApiClient.isConnected()) {
-                mGoogleApiClient.connect();
-            }
-
+/*
         // The filter's action is BROADCAST_ACTION
         IntentFilter mStatusIntentFilter = new IntentFilter(
                 Constantes.BROADCAST_ACTION);
@@ -393,25 +475,20 @@ public class MitycRubi extends AppCompatActivity implements
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mScrappingScrapWebMitycReceiver,
                 mStatusIntentFilter);
-
+*/
     }
 
 
     @Override
     protected void onPause() {
-
-        try {
-            unregisterReceiver(mScrappingScrapWebMitycReceiver);
-        } catch (Exception e) {
-            //Log.e("onPause", e.getMessage());
-        }
-
         super.onPause();
     }
 
     @Override
     protected void onStop() {
-        mGoogleApiClient.disconnect();
+        if (mGoogleApiClient != null) {
+            mGoogleApiClient.disconnect();
+        }
         super.onStop();
     }
 
@@ -419,6 +496,7 @@ public class MitycRubi extends AppCompatActivity implements
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_mityc_tab, menu);
+
         return true;
     }
 
@@ -430,10 +508,115 @@ public class MitycRubi extends AppCompatActivity implements
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
+        if (item.getItemId() == android.R.id.home) {
+
+            MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+            mapFragment.getMapAsync(omrc);
+
+            mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+            mDrawerLayout.openDrawer(Gravity.LEFT);
+            // evita que se cierre el DrawerLayout al moverse por el mapa.
+            //mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN);
+            prepararDrawerList();
+
+        }
         //noinspection SimplifiableIfStatement
         //if (id == R.id.action_actualizar) {
         //}
         return super.onOptionsItemSelected(item);
+    }
+
+
+    /*
+     * ShowViewCase para GasolinaRubí:
+     *
+     * Aquí mostramos ayuda al usuario sobre cómo utilizar la aplicación.
+     */
+
+
+    public void mostrarAyuda() {
+
+        Toolbar tb = (Toolbar) findViewById(R.id.toolbar);
+        View tv = getToolbarNavigationIcon(tb);
+        final View v = (View) findViewById(R.id.left_drawer);
+        mViewPager.setVisibility(View.INVISIBLE);
+
+        SharedPreferences sp = getSharedPreferences(getString(R.string.preferencias_mityc), MODE_PRIVATE);
+        SharedPreferences.Editor spe = sp.edit();
+        spe.putBoolean(getString(R.string.preferencia_primera_vez), false);
+        spe.commit();
+
+        final ShowcaseView scv = new ShowcaseView.Builder(this)
+                .setTarget(new ViewTarget(tv))
+                .setContentTitle("Menú desplegable: Mapa y lista de poblaciones preferidas")
+                .setContentText("Aquí puede desplegar el mapa, visualizar otras poblaciones y guardarlas para visualizarlas más tarde")
+                .blockAllTouches()
+                .withMaterialShowcase()
+                .setStyle(R.style.CustomShowcaseTheme)
+                .build();
+        scv.setButtonText("Entendido");
+
+
+        scv.overrideButtonClick(new View.OnClickListener() {
+            int count1 = 0;
+
+            @Override
+            public void onClick(View v) {
+                count1++;
+                switch (count1) {
+                    case 1:
+                        String[] poblaciones = {"0#1#2#3#4", "Terrassa#Sant Cugat del Vallès#Barcelona#Rubí#Sabadell", "0#1#2#3#4"};
+                        setListaCodPoblaciones(poblaciones);
+                        mDrawerLayout.openDrawer(Gravity.LEFT);
+                        prepararDrawerList();
+                        scv.setContentTitle("Lista de poblaciones preferidas");
+                        scv.setContentText("Para eliminar una población guardada, simplemente desplácela a la derecha");
+                        scv.setStyle(ShowcaseView.LEFT_OF);
+                        scv.setStyle(R.style.CustomShowcaseTheme);
+                        scv.setShowcase(new ViewTarget(mDrawerList), false);
+                        scv.setButtonText("Entendido");
+                        break;
+                    case 2:
+                        mDrawerLayout.closeDrawer(Gravity.LEFT);
+                        setListaCodPoblaciones(new String[] {"", "", ""});
+                        mViewPager.setVisibility(View.VISIBLE);
+
+                        scv.setContentTitle("Visualizar una estación en el mapa");
+                        scv.setContentText("Puede visualizar la posición de una estación en el mapa, simplemente seleccionando una estación de la lista");
+                        //scv.setStyle(ShowcaseView..LEFT_OF);
+                        scv.setStyle(R.style.CustomShowcaseTheme);
+                        scv.setShowcase(new ViewTarget(mViewPager), false);
+                        scv.setButtonText("Entendido");
+                        break;
+
+                    case 3:
+                        scv.hide();
+                        break;
+                }
+
+            }
+        });
+
+
+    }
+
+    public static View getToolbarNavigationIcon(Toolbar toolbar){
+        //check if contentDescription previously was set
+        boolean hadContentDescription = TextUtils.isEmpty(toolbar.getNavigationContentDescription());
+        String contentDescription = !hadContentDescription ? toolbar.getNavigationContentDescription().toString() : "navigationIcon";
+        toolbar.setNavigationContentDescription(contentDescription);
+        ArrayList<View> potentialViews = new ArrayList<View>();
+        //find the view based on it's content description, set programatically or with android:contentDescription
+        toolbar.findViewsWithText(potentialViews,contentDescription, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION);
+        //Nav icon is always instantiated at this point because calling setNavigationContentDescription ensures its existence
+        View navIcon = null;
+        if(potentialViews.size() > 0){
+            navIcon = potentialViews.get(0); //navigation icon is ImageButton
+        }
+        //Clear content description if not previously present
+        if(hadContentDescription)
+            toolbar.setNavigationContentDescription(null);
+        return navIcon;
     }
 
 
@@ -491,7 +674,7 @@ public class MitycRubi extends AppCompatActivity implements
         // iniciar barra de progreso de carga
         progressBar = new ProgressDialog(this);
         progressBar.setCancelable(true);
-        progressBar.setMessage("Cargando datos del Ministerio de Industria ...");
+        progressBar.setMessage("Conectando Api Google ...");
         progressBar.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressBar.show();
 
@@ -507,6 +690,51 @@ public class MitycRubi extends AppCompatActivity implements
         // automáticamente a onConnect()
         mGoogleApiClient.connect();
     }
+
+
+    public void infoFalloConexión(Boolean falloGps) {
+        final AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
+        LayoutInflater inflater = MitycRubi.this.getLayoutInflater();
+        final View dialogView = inflater.inflate(R.layout.info_conexion, null);
+        TextView tv = (TextView) dialogView.findViewById(R.id.conexionText);
+
+        if (falloGps) {
+            tv.setText(getString(R.string.inform_conexion_text_gps));
+        } else {
+            tv.setText(getString(R.string.inform_conexion_text_red));
+        }
+
+        alert.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                mGoogleApiClient.disconnect();
+                getProgressBar().dismiss();
+                conectarApiGoogle();
+            }
+        });
+
+        alert.setInverseBackgroundForced(true);
+        alert.setView(dialogView);
+        alert.show();
+    }
+
+
+    public Boolean locationEnabled() {
+        Boolean gps_enabled = false;
+        Boolean network_enabled = false;
+
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch (Exception ex) {
+        }
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception ex) {
+        }
+        return (gps_enabled || network_enabled);
+    }
+
 
     /***** GETTERS Y SETTERS ****************/
     /**
@@ -576,16 +804,19 @@ public class MitycRubi extends AppCompatActivity implements
      * Si hay permiso para acceder a Gps, devuelve verdadero, si no falso.
      */
     public boolean permisosGps() throws SecurityException {
-        Boolean perm = (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED);
-        // Si no tiene permisos, lo solicitamos y se recibirá el resultado de la solicitud en
-        // onRequestPermissionsResult().
-        if (!perm) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSION_REQUEST_LOCATION);
+        ArrayList<String> perms = new ArrayList<>();
+
+        if (!(ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED))
+            perms.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        if (!(ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED))
+            perms.add(Manifest.permission.INTERNET);
+
+        if (perms.size() > 0) {
+            ActivityCompat.requestPermissions(this, perms.toArray(new String[] {}), PETICION_PERMISO_MULTIPLE);
         }
-        return perm;
+        return perms.size() == 0;
     }
 
     /*
@@ -595,26 +826,62 @@ public class MitycRubi extends AppCompatActivity implements
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
         switch (requestCode) {
-            case PERMISSION_REQUEST_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // Si el usuario concede permisos, comenzamos de nuevo
-                    // con enableLocationUpdates().
-                    enableLocationUpdates();
-
-                } else {
-
-                    // El usuario denegó los permisos
-                    Log.i(LOGTAG, "### MitycRubi:onRequestPermissionsResult-> el usuario" +
-                            "denegó los permisos.");
+            case PETICION_PERMISO_MULTIPLE: {
+                boolean bperm = true;
+                for (int i = 0; i < permissions.length; i++) {
+                    if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                        bperm = false;
+                        break;
+                    }
                 }
-                return;
-            }
+                // If request is cancelled, the result arrays are empty.
+                if (bperm) {
+                    enableLocationUpdates();
+                } else {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                        infoPermisos(getString(R.string.sinpermisoRechazado));
+                    } else {
+                        infoPermisos(getString(R.string.sinpermisoRechazadoPermanente));
+                    }
+                    return;
+                }
 
+            }
         }
     }
+
+    public void infoPermisos(String t) {
+        final AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
+        LayoutInflater inflater = MitycRubi.this.getLayoutInflater();
+        final View dialogView = inflater.inflate(R.layout.info_permisos, null);
+
+        if (!t.equals(getString(R.string.sinpermisoRechazadoPermanente))) {
+            alert.setPositiveButton("Conceder permisos", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    permisosGps();
+                }
+            });
+            alert.setNegativeButton("No conceder permisos", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    finish();
+                }
+            });
+        } else {
+            alert.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    finish();
+                }
+            });
+        }
+
+        alert.setInverseBackgroundForced(true);
+        alert.setView(dialogView);
+        TextView tv = (TextView) dialogView.findViewById(R.id.textoInfoPerm);
+        tv.setText(t);
+        alert.show();
+    }
+
 
     /*
      * FIN Métodos para tratar permisos
@@ -641,17 +908,20 @@ public class MitycRubi extends AppCompatActivity implements
         //mLastLocation.setLatitude(41.473538);
         //mLastLocation.setLongitude(2.085244);
 
-        // test Barcelona
-        //mLastLocation.setLatitude(41.3825);
-        //mLastLocation.setLongitude(2.176944);
+        // test Barcelona Guinardó
+        //mLastLocation.setLatitude(41.402615);
+        //mLastLocation.setLongitude(2.166605);
+
+        // test Barcelona La Floresta
+        //mLastLocation.setLatitude(41.444987);
+        //mLastLocation.setLongitude(2.072265);
+
+        // test Hospitalet
+        //mLastLocation.setLatitude(41.346317);
+        //mLastLocation.setLongitude(2.124958);
 
         // una vez tenemos las coordenadas preparamos el mapa para que luego automaticamente
         // se llame a onMapReady()
-
-/*
-        mapFragment = (MapFragment) this.getFragmentManager().findFragmentById(R.id.map);
-        mapFragment.getMapAsync(omrc);
-*/
 
         // iniciamos servicio de geolocalizacion.
         mCityNameResultReceiverFromGeocoder = new CityNameResultReceiverFromGeocoder(new Handler(), this);
@@ -666,7 +936,7 @@ public class MitycRubi extends AppCompatActivity implements
      */
     private void enableLocationUpdates() {
 
-        mlocationRequest = new LocationRequest();
+        mlocationRequest = LocationRequest.create();
         mlocationRequest.setInterval(1000);
         mlocationRequest.setFastestInterval(500);
         mlocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
@@ -682,7 +952,6 @@ public class MitycRubi extends AppCompatActivity implements
         task.addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
             @Override
             public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
-                Log.i(LOGTAG, "Configuración correcta");
                 startLocationUpdates();
             }
         });
@@ -693,15 +962,16 @@ public class MitycRubi extends AppCompatActivity implements
                 if (e instanceof ResolvableApiException) {
                     // Location settings are not satisfied, but this can be fixed
                     // by showing the user a dialog.
-                    try {
+                    //try {
                         // Show the dialog by calling startResolutionForResult(),
                         // and check the result in onActivityResult().
-                        ResolvableApiException resolvable = (ResolvableApiException) e;
-                        resolvable.startResolutionForResult(MitycRubi.this,
-                                PETICION_CONFIG_UBICACION);
-                    } catch (IntentSender.SendIntentException sendEx) {
-                        // Ignore the error.
-                    }
+                        infoFalloConexión(true);
+                        //ResolvableApiException resolvable = (ResolvableApiException) e;
+                        //resolvable.startResolutionForResult(MitycRubi.this,
+                        //        PETICION_CONFIG_UBICACION);
+                    //} catch (IntentSender.SendIntentException sendEx) {
+                    //    infoFalloConexión();
+                    //}
                 }
             }
         });
@@ -726,12 +996,12 @@ public class MitycRubi extends AppCompatActivity implements
             if (permisosGps())
                 mFusedLocationClient.requestLocationUpdates(mlocationRequest, mlocationCallback, null);
         } catch (SecurityException se) {
-            Log.i(LOGTAG, "### MitycRub.startLocationUpdates() securityException");
+            infoFalloConexión(true);
         }
     }
 
     private void actualizar() {
-        mostrarTituloBuscando(null);
+        mostrarTituloBuscando(null, null);
 
         // usamos ApiGoogle solo para coordenadas
         if ((!cambioPoblacion) && (mGoogleApiClient != null) && (!mGoogleApiClient.isConnected())) {
@@ -758,7 +1028,7 @@ public class MitycRubi extends AppCompatActivity implements
                     }
                 }
             } catch (SecurityException se) {
-                Log.i(LOGTAG,"### MitycRubi.actualizar SecurityException");
+                // security exception
             }
         }
         Toolbar t = (Toolbar) findViewById(R.id.toolbar);
@@ -772,12 +1042,29 @@ public class MitycRubi extends AppCompatActivity implements
 
     /*
      * devuelve array de strings.
-     * [listaCodPoblaciones, listaNomPoblaciones]
+     * [listaCodPoblaciones, listaNomPoblaciones, listaProvPoblaciones]
      */
     public String[] getListaCodPoblaciones() {
         SharedPreferences ultimaLocalidad = getSharedPreferences(Constantes.SHARED_PREFS_FILE, 0);
         listaCodPoblaciones = ultimaLocalidad.getString(Constantes.SHARED_LISTA_CODIGOS_POBLACIONES, "");
         listaNomPoblaciones = ultimaLocalidad.getString(Constantes.SHARED_LISTA_NOMS_POBLACIONES, "");
+        listaProvPoblaciones = ultimaLocalidad.getString(Constantes.SHARED_LISTA_PROV_POBLACIONES, "");
+
+        /*
+         * Resolvemos el bug Furelos en esta parte.
+         * Comprobamos si existe en la lista, la localidad Furelos y si es cierto, reseteamos
+         * la lista de poblaciones.
+         * Se debe a que en un código de comprobación se añadió estas poblaciones (Rubí, Terrassa,
+         * Barcelona, Sant Cugat del Vallès, Furelos) para hacer pruebas pero luego quedaron
+         * grabadas en los terminales, con códigos de población erróneos.
+         */
+        if (listaNomPoblaciones.contains("Furelos")) {
+            setListaCodPoblaciones(new String[] {"", "", ""});
+            listaCodPoblaciones = "";
+            listaNomPoblaciones = "";
+            listaProvPoblaciones = "";
+        }
+
 
         if (listaCodPoblaciones.startsWith("#"))
             listaCodPoblaciones = listaCodPoblaciones.substring(1, listaCodPoblaciones.length());
@@ -790,7 +1077,13 @@ public class MitycRubi extends AppCompatActivity implements
         if (listaNomPoblaciones.endsWith("#"))
             listaNomPoblaciones = listaNomPoblaciones.substring(0, listaNomPoblaciones.length() - 1);
         listaNomPoblaciones = listaNomPoblaciones.replace("##", "#");
-        String[] retorno = { listaCodPoblaciones, listaNomPoblaciones };
+
+        if (listaProvPoblaciones.startsWith("#"))
+            listaProvPoblaciones = listaProvPoblaciones.substring(1, listaProvPoblaciones.length());
+        if (listaProvPoblaciones.endsWith("#"))
+            listaProvPoblaciones = listaProvPoblaciones.substring(0, listaProvPoblaciones.length() - 1);
+        listaProvPoblaciones = listaProvPoblaciones.replace("##", "#");
+        String[] retorno = { listaCodPoblaciones, listaNomPoblaciones, listaProvPoblaciones };
 
         return retorno;
     }
@@ -812,30 +1105,37 @@ public class MitycRubi extends AppCompatActivity implements
 
 
     public void deleteListaCodPoblaciones(String poblacion) {
+        if (!bloqueo) return;
         String[] l = getListaCodPoblaciones();
         String listaCod = l[0];
         String listaNom = l[1];
+        String listaProv = l[2];
 
         int i = 0;
         String[] arrCod = listaCod.split("#");
         String[] arrNom = listaNom.split("#");
+        String[] arrProv = listaProv.split("#");
+
         for (i = 0; i < arrNom.length; i++) {
             if (poblacion.equals(arrNom[i])) {
                 break;
             }
         }
-        if ((i < arrNom.length) && (!arrNom[i].equals(poblacion))) return;
 
-        listaCod = listaCod.replaceAll(
-                        "(^" + arrCod[i] + "$)|(^" + arrCod[i]
-                        + "#)|(#" + arrCod[i] + "$)|(#" + arrCod[i]
-                        + "#)"
-                        , "#");
-        listaNom = listaNom.replaceAll(
-                "(^" + arrNom[i] + "$)|(^" + arrNom[i]
-                        + "#)|(#" + arrNom[i] + "$)|(#" + arrNom[i]
-                        + "#)"
-                , "#");
+        if ((i < arrNom.length) && (!arrNom[i].equals(poblacion))) return;
+        if (i == arrNom.length) return;
+
+        List<String> alCod = new ArrayList<>(Arrays.asList(arrCod));
+        alCod.remove(i);
+        listaCod = TextUtils.join("#", alCod);
+
+        List<String> alNom = new ArrayList<>(Arrays.asList(arrNom));
+        alNom.remove(i);
+        listaNom = TextUtils.join("#", alNom);
+
+        List<String> alProv = new ArrayList<>(Arrays.asList(arrProv));
+        alProv.remove(i);
+        listaProv = TextUtils.join("#", alProv);
 
         if (listaCod.startsWith("#"))
             listaCod = listaCod.substring(1, listaCod.length());
@@ -848,14 +1148,23 @@ public class MitycRubi extends AppCompatActivity implements
         if (listaNom.endsWith("#"))
             listaNom = listaNom.substring(0, listaNom.length() - 1);
         listaNom = listaNom.replace("##", "#");
-        setListaCodPoblaciones(new String[] { listaCod, listaNom });
+
+        if (listaProv.startsWith("#"))
+            listaProv = listaProv.substring(1, listaProv.length());
+        if (listaProv.endsWith("#"))
+            listaProv = listaProv.substring(0, listaProv.length() - 1);
+        listaProv = listaProv.replace("##", "#");
+
+        setListaCodPoblaciones(new String[] { listaCod, listaNom, listaProv });
     }
 
     public void setListaCodPoblaciones(String[] lista) {
         SharedPreferences.Editor editor = getApplicationContext().getSharedPreferences(Constantes.SHARED_PREFS_FILE, 0).edit();
         editor.putString(Constantes.SHARED_LISTA_CODIGOS_POBLACIONES, lista[0]);
         editor.putString(Constantes.SHARED_LISTA_NOMS_POBLACIONES, lista[1]);
+        editor.putString(Constantes.SHARED_LISTA_PROV_POBLACIONES, lista[2]);
         editor.commit();
+
     }
 
     public void preparaListaMenuDrawer() {
@@ -867,9 +1176,9 @@ public class MitycRubi extends AppCompatActivity implements
 
         String listaPoblaciones = null;
         if (!listaCod[0].isEmpty()) {
-            listaPoblaciones = NOM_LOCALIDAD + "#" + TextUtils.join("#", listaNom).concat("#<otras poblaciones>");
+            listaPoblaciones = NOM_LOCALIDAD + "#" + TextUtils.join("#", listaNom).concat("#"+getString(R.string.otras_poblaciones));
         } else {
-            listaPoblaciones = NOM_LOCALIDAD.concat("#<otras poblaciones>");
+            listaPoblaciones = NOM_LOCALIDAD.concat("#"+getString(R.string.otras_poblaciones));
         }
         listaNom = listaPoblaciones.split("#");
         mDrawerList.setAdapter(new DrawerListAdapter(getApplicationContext(), Arrays.asList(listaNom)));
@@ -881,6 +1190,8 @@ public class MitycRubi extends AppCompatActivity implements
         // preparamos el drawerLayout
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         Toolbar mDrawerToolbar = (Toolbar) findViewById(R.id.toolbar);
+        AutoResizeTextView td = (AutoResizeTextView) findViewById(R.id.tituloDrawer);
+        td.setText(NOM_LOC_DRAWERLIST);
 
         preparaListaMenuDrawer();
 
@@ -910,10 +1221,30 @@ public class MitycRubi extends AppCompatActivity implements
         Mientras se está descargando los datos de una población se muestra el título
         en color rojo.
         Si el título t es null, sólo cambia de color el título actual.
+        st es ell nombre del barrio, en caso de tenerlo o "" en caso contrario.
      */
-    public void mostrarTituloBuscando(String t) {
-        com.corral.mityc.AutoResizeTextView titulo = (com.corral.mityc.AutoResizeTextView) findViewById(R.id.titulo);
-        if (t != null) titulo.setText(t);
+    public void mostrarTituloBuscando(String t, String st) {
+
+        AutoResizeTextView titulo = (AutoResizeTextView) findViewById(R.id.titulo);
+        if (t != null) {
+            TextView tv = (TextView) findViewById(R.id.titulo_barrio);
+            TextView tv2 = (TextView) findViewById(R.id.titulo_barrio2);
+            if ((st != null) && (!st.isEmpty()) && (!Parseo.sinAcentos(t).equals(Parseo.sinAcentos(st)))) {
+                titulo.setText(t);
+                tv.setText(st);
+                tv.setVisibility(View.VISIBLE);
+                if (st.length() < 25) {
+                    tv2.setVisibility(View.VISIBLE);
+                } else {
+                    tv2.setVisibility(View.GONE);
+                }
+            } else {
+                titulo.setText(t);
+                tv.setText("");
+                tv.setVisibility(View.GONE);
+                tv2.setVisibility(View.GONE);
+            }
+        }
         titulo.setTextColor(Color.parseColor("#FFFF0000"));
     }
 
@@ -921,12 +1252,33 @@ public class MitycRubi extends AppCompatActivity implements
         Cuando se han descargado los datos de una población se muestra el título en
         granate.
         Si el título t es null, sólo cambia de color el título actual.
+        st es ell nombre del barrio, en caso de tenerlo o "" en caso contrario.
      */
-    public void mostrarTituloEncontrado(String t) {
-        com.corral.mityc.AutoResizeTextView titulo = (com.corral.mityc.AutoResizeTextView) findViewById(R.id.titulo);
-        if (t != null) titulo.setHint(t);
+    public void mostrarTituloEncontrado(String t, String st) {
+        AutoResizeTextView titulo = (AutoResizeTextView) findViewById(R.id.titulo);
+        if (t != null) {
+            TextView tv = (TextView) findViewById(R.id.titulo_barrio);
+            TextView tv2 = (TextView) findViewById(R.id.titulo_barrio2);
+            if ((st != null) && (!st.isEmpty()) && ((!Parseo.sinAcentos(t).equals(Parseo.sinAcentos(st))))) {
+                titulo.setHint(t);
+                tv.setText(st);
+                tv.setVisibility(View.VISIBLE);
+                if (st.length() < 25) {
+                    tv2.setVisibility(View.VISIBLE);
+                } else {
+                    tv2.setVisibility(View.GONE);
+                }
+            } else {
+                titulo.setHint(t);
+                tv.setText("");
+                tv.setVisibility(View.GONE);
+                tv2.setVisibility(View.GONE);
+            }
+        }
         titulo.setTextColor(Color.parseColor("#843636"));
     }
+
+
 
     /*******************************************************************************
      ************************** Clase para borrar elementos del menu DrawerList ****
@@ -937,7 +1289,6 @@ public class MitycRubi extends AppCompatActivity implements
         private List<String> labels;
         private float mLastX;
         private float mLastY;
-
 
 
         public DrawerListAdapter(Context context, List<String> labels) {
@@ -957,76 +1308,98 @@ public class MitycRubi extends AppCompatActivity implements
             ViewHolder holder;
             View rowView = convertView;
 
-            if (rowView == null) {
+            final ColorDrawable[] BackGroundColor = {
+                    new ColorDrawable(Color.parseColor("#EF9A9A")),
+                    new ColorDrawable(Color.BLACK)
+            };
 
-                LayoutInflater inflater = getLayoutInflater();
-                rowView = inflater.inflate(R.layout.drawer_list_item, null, true);
-                holder = new ViewHolder();
-                holder.textView1 = (TextView) rowView.findViewById(R.id.text1);
-                holder.textView1.setText(labels.get(position));
-                if (holder.textView1.getText().toString().equalsIgnoreCase(NOM_LOC_DRAWERLIST)) {
-                    holder.textView1.setBackgroundColor(Color.MAGENTA);
-                }
-                holder.icon_1 = (ImageView) rowView.findViewById(R.id.locationnow);
-                if (position == 0) {
-                    holder.icon_1.setVisibility(View.VISIBLE);
-                } else {
-                    holder.icon_1.setVisibility(View.GONE);
-                }
-                rowView.setTag(holder);
-            } else {
-                holder = (ViewHolder) rowView.getTag();
+            LayoutInflater inflater = getLayoutInflater();
+            rowView = inflater.inflate(R.layout.drawer_list_item, null, true);
+            holder = new ViewHolder();
+
+            holder.textView1 = (TextView) rowView.findViewById(R.id.text1);
+            holder.textView1.setText(labels.get(position));
+            if (holder.textView1.getText().toString().equalsIgnoreCase(NOM_LOC_DRAWERLIST)) {
+                holder.textView1.setTextColor(Color.parseColor("#FF9800"));
+                holder.textView1.setTypeface(holder.textView1.getTypeface(), Typeface.BOLD_ITALIC);
             }
+            holder.icon_1 = (ImageView) rowView.findViewById(R.id.locationnow);
+            if (position == 0) {
+                holder.icon_1.setVisibility(View.VISIBLE);
+            } else if (labels.get(position).contains(getString(R.string.otras_poblaciones))){
+                holder.icon_1.setImageResource(R.drawable.ic_playlist_add_black_24dp);
+                holder.icon_1.setColorFilter(Color.WHITE);
+                holder.icon_1.setVisibility(View.VISIBLE);
+            } else {
+                holder.icon_1.setVisibility(View.GONE);
+            }
+            rowView.setTag(holder);
 
             rowView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
+
                     Float currentX = event.getX();
                     Float currentY = event.getY();
 
-                    ViewHolder vh = (ViewHolder) v.getTag();
                     TextView tv = ((ViewHolder) v.getTag()).textView1;
+
                     switch (event.getAction()) {
                         case MotionEvent.ACTION_DOWN:
+
+                            if (!NOM_LOC_DRAWERLIST.equals(tv.getText())) {
+                                TransitionDrawable transitionDrawable = new TransitionDrawable(BackGroundColor);
+                                //tv.setBackground(transitionDrawable);
+                                v.setBackground(transitionDrawable);
+                                transitionDrawable.startTransition(1000);
+                            }
+
                             mLastX = currentX;
                             mLastY = currentY;
-                            tv.setBackgroundColor(Color.CYAN);
                             break;
                         case MotionEvent.ACTION_MOVE:
-                            tv.setBackgroundColor(Color.CYAN);
-                            if ( currentX > mLastX + 10 ) { //v.getWidth() / 6) {
-                                v.setEnabled(false);
-                                v.setOnClickListener(null);
+
+                            if ((currentX > mLastX + 20) &&
+                                    !labels.get(position).contains(getString(R.string.otras_poblaciones)) &&
+                                    position > 0) {
+                                if (bloqueo) {
+                                    return false;
+                                }
                                 TranslateAnimation translateAnimation1 = new TranslateAnimation(
                                         TranslateAnimation.RELATIVE_TO_SELF, 0.0f,
                                         TranslateAnimation.RELATIVE_TO_SELF, 10f,
                                         TranslateAnimation.RELATIVE_TO_SELF, 0.0f,
                                         TranslateAnimation.RELATIVE_TO_SELF, 0.0f);
-                                translateAnimation1.setDuration(1500);
-                                v.startAnimation(translateAnimation1);
-                                deleteListaCodPoblaciones(tv.getText().toString());
-                                tv.setBackgroundColor(Color.BLACK);
-                                translateAnimation1.setAnimationListener(new Animation.AnimationListener(){
-                                    public void onAnimationStart(Animation a){}
-                                    public void onAnimationRepeat(Animation a){}
-                                    public void onAnimationEnd(Animation a){
-                                        prepararDrawerList();
+                                synchronized (bloqueo) {
+                                    bloqueo = true;
+                                    tv.setBackgroundColor(Color.CYAN);
+                                    v.setEnabled(false);
+                                    v.setOnClickListener(null);
+                                    translateAnimation1.setDuration(1500);
+                                    v.startAnimation(translateAnimation1);
+                                    tv.setBackgroundColor(Color.CYAN);
+                                    deleteListaCodPoblaciones(tv.getText().toString());
+                                    bloqueo = false;
+                                }
+                                translateAnimation1.setAnimationListener(new Animation.AnimationListener() {
+                                    public void onAnimationStart(Animation a) {
                                     }
 
+                                    public void onAnimationRepeat(Animation a) {
+                                    }
+
+                                    public void onAnimationEnd(Animation a) {
+                                        prepararDrawerList();
+                                    }
                                 });
-                            }
-                            if (( currentY > mLastY + 5 ) || ( currentY < mLastY - 5)) {
-                                tv.setBackgroundColor(Color.BLACK);
                             }
                             break;
                         case MotionEvent.ACTION_UP:
 
-                            tv.setBackgroundColor(Color.BLACK);
                             if (((currentX <= mLastX + 20) && (currentX >= mLastX - 20)) &&
                                     ((currentY <= mLastY + 10) && (currentY >= mLastY - 10))) {
                                 onItemListClick(posicionListaCodPoblaciones(tv.getText().toString()));
                             }
-
                             break;
                     }
                     return true;
@@ -1047,7 +1420,6 @@ public class MitycRubi extends AppCompatActivity implements
     }
 
     private void nuevaPoblacion() {
-        cambioPoblacion = true;
         Toolbar t = (Toolbar) findViewById(R.id.toolbar);
         t.setVisibility(View.INVISIBLE);
         Intent intent = new Intent(this, NuevaPoblacion.class);
@@ -1060,19 +1432,20 @@ public class MitycRubi extends AppCompatActivity implements
         // iniciar barra de progreso de carga
         progressBar = new ProgressDialog(this);
         progressBar.setCancelable(true);
-        progressBar.setMessage("Cargando datos del Ministerio de Industria ...");
+        progressBar.setMessage("Buscando población ...");
         progressBar.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressBar.show();
 
         if (position > 0) {
             COD_LOC_DRAWERLIST = getListaCodPoblaciones()[0].split("#")[position - 1];
             NOM_LOC_DRAWERLIST = getListaCodPoblaciones()[1].split("#")[position - 1];
+            PROV_DRAWERLIST = getListaCodPoblaciones()[2].split("#")[position - 1];
         } else {
             COD_LOC_DRAWERLIST = COD_LOCALIDAD;
             NOM_LOC_DRAWERLIST = NOM_LOCALIDAD;
             cambioPoblacion = false;
         }
-        mostrarTituloBuscando(NOM_LOC_DRAWERLIST);
+        mostrarTituloBuscando(NOM_LOC_DRAWERLIST, SUBNOM_LOC_DRAWERLIST);
 
         // mientras se actualiza ViewPages, mostramos lo que tenemos en caché de esta población.
         mDrawerLayout.closeDrawer(Gravity.LEFT);
@@ -1256,7 +1629,7 @@ public class MitycRubi extends AppCompatActivity implements
                 }
             }
         }
-///###
+
         private void clickEnEstacion(Estacion estacion, FragmentActivity cntx) {
 
             // iniciamos servicio de geolocalizacion.
@@ -1277,7 +1650,7 @@ public class MitycRubi extends AppCompatActivity implements
             mDrawerLayout = (DrawerLayout) cntx.findViewById(R.id.drawer_layout);
             mDrawerLayout.openDrawer(Gravity.LEFT);
             // evita que se cierre el DrawerLayout al moverse por el mapa.
-            mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN);
+            //mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN);
 
         }
 
@@ -1317,11 +1690,11 @@ public class MitycRubi extends AppCompatActivity implements
                 case 0:
                     return "GASOLEO A";
                 case 1:
-                    return "GASOLEO A NUEVO";
+                    return "NUEVO GASOLEO A";
                 case 2:
-                    return "SIN PLOMO 95";
+                    return "SIN PLOMO \b 95";
                 case 3:
-                    return "SIN PLOMO 98";
+                    return "SIN PLOMO \b 98";
             }
             return null;
         }

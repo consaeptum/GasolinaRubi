@@ -133,15 +133,90 @@ ________________________________________________________________________________
 27/mar/18   [X] Cambiar el icono del Drawer al cerrar, en lugar de una flecha a la izquierda, poner
                 una X.
 
-27/mar/18   [ ] Al crear una nueva población, la muestra pero enseguida aparece de nuevo la población
+27/mar/18   [X] Al crear una nueva población, la muestra pero enseguida aparece de nuevo la población
                 en la que estamos en lugar de la que acabamos de seleccionar.
 
-27/mar/18   [ ] Aumentar el nivel de precisión de población, no debería encontrar sólo las ciudades
+30/mar/18   [X] Al crear una población, no se actualiza el mapa a la localidad seleccionada.
+                La siguiente vez sí que se actualiza.
+
+                Solución: En MitycRubi.onMapReady() eliminamos la condición (mLastLocation != null)
+                ya que ya no utilizamos la localización gps en esta parte del código, sinó el
+                nombre de la población.
+
+
+31/mar/18   [X] Al pulsar el botón Back desaparece el nombre de la población y el DrawerButton.
+                No se ve el toolBar.  Ocurre si estamos en nueva población para añadir una nueva
+                localidad.
+
+                solución: En MitycRubi.onActivityResult() forzamos que se visualice el Toolbar
+                al volver de NuevaPoblación.
+
+
+1/abr/18    [X] Mostrar iconos de EE.SS. en el mapa.
+
+2/abr/18    [x] Eliminar todos los getProvider SetProvider porque ya no son necesarios.
+
+2/abr/18    [X] Borrar los logs y printlns.
+
+27/mar/18   [X] Aumentar el nivel de precisión de población, no debería encontrar sólo las ciudades
                 grandes, sinó trambién las pequeñas como La Floresta en lugar de Sant Cugat o
                 Barcelona - Sarrià en lugar de sólo Barcelona.  Aunque podría haber un problema
                 al buscar estaciones en el caso de Sarrià etc...
 
-27/mar/18   [ ] En algunas localización devuelve null como población.
+                solución: se afina la extracción de datos de la respuesta Json de
+                GeocoderHelperConAsynctask y de fetchCityNameUsingGoogleMap().  Por superar el
+                número máximo de peticiones a http://maps.googleapis.com/maps/api/geocode/json?latlng=
+                no podemos hacer las pruebas hoy.  Faltaría ver si la condición
+                 ("neighborhood".equals(types.getString(k))) cumple con lo esperado.
 
+                 Sustituimos neighborhood por route y en lugar de devolvernos un barrio, nos
+                 devuelve la calle (de momento lo dejamos así ya que no parece que en el
+                 resultado Json algo indique el nombre de un barrio).
+
+27/mar/18   [X] En algunas localización devuelve null como población.
+                Solución:  Parece que al depurar el código no se ha vuelto a producir este error.
+
+3/abr/18    [X] Puede haber poblaciones con mismo nombre y al hacer búsqueda fallar si no se
+                especifica la provincia.  Se añade PROV_DRAWERLIST y se le asigna valor cuando
+                se cree una nueva población y cuando se detecta la posición gps.
+                Pero al cambiar de población, no tenemos forma de obtener la provincia, así que
+                habrá que añadir un String a SharedPreferences para que al cambiar de población
+                podamos indicar la provincia para omitir errores en el posicionamiento del mapa.
+
+                solución: modificamos getListaCodPoblaciones(), deleteListaCodPoblaciones() y
+                setListaCodPoblaciones(), pero falta que cada vez que asignemos valor a
+                PROV_DRAWERLIST se guarde convenientemente en onActivityResult(), y que se
+                utilice cuando se cambie de población en cambioPoblacion().
+                Asegurarse que en onMapReady() se recibe la provincia correctamente.
+
+
+5/abr/18    [x] Mientras el usuario no hay aceptado los permisos de la aplicación , la aplicación
+                debe mostrar un mensaje avisando que mientras no se acepten no puede funcionar
+                ya que toda la aplicación depende de ello.
+
+                solución:  ver onRequestPermissionsResult(), permisosGps() y infoPermisos()
+
+
+5/abr/18    [X] Si se ha iniciado la aplicación sin acceso a datos y ha quedado vacía la tabla
+                y a continuació abrimos el DrawerList y hacemos click en población actual aunque
+                esté en blanco, aparece un ANR.  Si se produce este fallo, a partir de ese
+                momento, cada vez que se inicia la app, no se carga la población actual aunque
+                sí las que estén en la lista del drawerlist.
+
+
+5/abr/18    [X] Al detectar la población , si se pierde la conexión, se queda el nombre de la población
+                actual, pero permanecen los datos de la anterior.
+                Parece que no se carga el caché si no hay conexión.
+                No hay mensajes de aviso cuando no hay conexión.  Habría que añadir mensajes de
+                aviso cuando hay problemas para acceder a Internet.
+
+                Si no se detecta la ubicación no hay problema por que sencillamente, no retorna
+                el flujo del programa hasta que se recibe onConnected().
+
+
+
+3/abr/18    [ ] Limpiar el código.
+
+X
 
 

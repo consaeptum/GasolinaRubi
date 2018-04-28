@@ -1,4 +1,4 @@
-package com.corral.mityc;
+package com.corral.mityc.util;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -11,9 +11,8 @@ import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
-import android.widget.TextView;
 
-public class AutoResizeTextView extends TextView {
+public class AutoResizeTextView extends android.support.v7.widget.AppCompatTextView {
     private interface SizeTester {
         /**
          *
@@ -159,7 +158,7 @@ public class AutoResizeTextView extends TextView {
         }
         int startSize = (int) mMinTextSize;
         int heightLimit = getMeasuredHeight() - getCompoundPaddingBottom()
-                - getCompoundPaddingTop();
+                - getCompoundPaddingTop() - 8;  // restamos 8 porque no cuenta bien el padding bottom
         mWidthLimit = getMeasuredWidth() - getCompoundPaddingLeft()
                 - getCompoundPaddingRight();
         mAvailableSpaceRect.right = mWidthLimit;
