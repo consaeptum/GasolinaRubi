@@ -1572,6 +1572,7 @@ public class MitycRubi extends AppCompatActivity implements
                         tvNom.setText(estacion.getNombre());
                         tvNom.setLayoutParams(trpstr);
                         tvNom.setTextColor(Color.BLACK);
+                        tvNom.setLines(3);
                         if (tp.usandoCache()) tvNom.setTextColor(Color.parseColor("#843636"));
                         tr.addView(tvNom);
 
