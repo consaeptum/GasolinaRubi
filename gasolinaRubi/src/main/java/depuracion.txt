@@ -217,6 +217,33 @@ ________________________________________________________________________________
 
 3/abr/18    [ ] Limpiar el código.
 
-X
+3/jun/18    [X] Falla al buscar Alicante:  El código mityc de Alicante es 152, pero encuentra
+                el 261, ya que se confunde con Sant Joan d'Alacant.
+
+                1520310Alicante/AlacantALICANTEComunidad Valenciana
+                2610310Sant Joan d'AlacantALICANTEComunidad Valenciana
+
+                Google indica por Gps Alacant, mientras que en Mityc está como "Alicante/Alacant"
+
+                Log:
+
+                onConnected() :::  llamada a enableLocationUpdates()  ...
+                  LocationCallback :: (MitycRubi.onCreate()): onLocationResult ...
+                 CityNameResultReceiverFromGeocoder::onReceiveResult()  PROV_DRAWERLIST ALICANTE# poblacion Alacant# barrio Alicante#03012
+                  com.corral.mityc.Parseo.buscarCodigoPoblacion: buscando .. ALACANT
+                  com.corral.mityc.Parseo.buscarCodigoPoblacion: coincidencia con .. SANT JOAN ALACANT
+                  com.corral.mityc.Parseo.buscarCodigoPoblacion: coincidencia con .. ALICANTE ALACANT ---> alicante/alacant es la misma
+                 WSJsonGetMunicipiosPorProvincia::onPostExecute()  Se encontró en Mityc la población Alacant
+                 com.corral.mityc.receptores.MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia código de mityc : 261
+                 com.corral.mityc.TablaPrecios  producto : gasóleoa A - 5 -- estaciones encontradas :
+                 com.corral.mityc.TablaPrecios  producto : gasóleo A Nuevo - 5 -- estaciones encontradas :
+                 com.corral.mityc.TablaPrecios  producto : sin plomo 95 - 5 -- estaciones encontradas :
+                 com.corral.mityc.TablaPrecios  producto :  sin plomo 98 - 5 -- estaciones encontradas :
+
+                solución:
+                        En WSJsonGetMunicipiosPorProvincia, en buscaPoblacion(), si encontramos
+                        el caracter /, entonces creamos dos elementos en el HashMap hm, uno en el
+                        primer idioma a la izquierda de / y el otro en el otro elemento, cada idioma
+                        por separado.
 
 

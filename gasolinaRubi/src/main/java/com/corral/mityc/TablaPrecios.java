@@ -4,6 +4,7 @@ import android.content.Context;
 import android.location.Location;
 
 import com.corral.mityc.estaciones.Estacion;
+import com.corral.mityc.util.MLog;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -168,6 +169,9 @@ public class TablaPrecios implements Serializable {
             try {
                 JSONObject jsonSource = new JSONObject(jsonEstaciones);
                 JSONArray jsonArray = jsonSource.getJSONArray("ListaEESSPrecio");
+
+                MLog.v(Constantes.TAG, getClass().getCanonicalName().
+                        concat("  producto : " + lp[2] + " - " + jsonArray.length() + " -- estaciones encontradas : "));
 
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject est = jsonArray.getJSONObject(i);

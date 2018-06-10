@@ -91,6 +91,8 @@
     <string name="inform_conexion">Hubo un problema de conexión</string>
     <string name="inform_conexion_text_red">Compruebe que tiene activada la transmisión de datos.</string>
     <string name="inform_conexion_text_gps">Comprueba que tiene activada la detección de su ubicación.</string>
+    <string name="inform_conexion_text_nopoblaciondb">No se encuentra la población en la base de datos de Mityc ...</string>
+    <string name="inform_dbmityc">Hubo un problema en la base de datos Mityc</string>
 
 
 </resources>

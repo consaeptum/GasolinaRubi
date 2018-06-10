@@ -5,15 +5,20 @@ import java.util.logging.Logger;
 public class Constantes {
 
     public static final Logger log= Logger.getLogger(Constantes.class.getName());
+
+    // DEBUG sirve para habilitar/deshabilitar logging
+    public static Boolean DEBUG = true;
+    public static final String TAG = "_MitycRubi_";
+
     public static final String URL_REVERSE_GEOCODING = "http://services.gisgraphy.com/reversegeocoding/search?format=json";
     public static final String MAPBOX_ACCESS_TOKEN = "com.mapbox.geocoder.android.AndroidGeocoder";
+
     // claves SharedPreferences
     public static final String SHARED_PREFS_ULTIMA_LOCALIDAD = "ULTIMA_LOCALIDAD";
     public static final String SHARED_PREFS_FILE = "SH_FILE";
 
     // Defines a custom Intent action
-    public static final String BROADCAST_ACTION =
-            "com.corral.gasolinarubi.BROADCAST";
+    public static final String BROADCAST_ACTION = "com.corral.gasolinarubi.BROADCAST";
     // Defines the key for the status "extra" in an Intent
     public static final String EXTENDED_DATA =
             "TablaPrecios";
@@ -22,6 +27,7 @@ public class Constantes {
 
     public static final int SUCCESS_RESULT = 0;
     public static final int FAILURE_RESULT = 1;
+    public static final int FAILURE_NOTFOUND = 2;
     public static final String PACKAGE_NAME =
             "com.google.android.gms.location.sample.locationaddress";
     public static final String RECEIVER = PACKAGE_NAME + ".RECEIVER";
@@ -130,4 +136,5 @@ public class Constantes {
     public static final String SHARED_LISTA_CODIGOS_POBLACIONES = "LISTA_COD_POBLACIONES";
     public static final String SHARED_LISTA_NOMS_POBLACIONES = "LISTA_NOM_POBLACIONES";
     public static final String SHARED_LISTA_PROV_POBLACIONES = "LISTA_PROV_POBLACIONES";
+
 }

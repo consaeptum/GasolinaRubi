@@ -8,6 +8,7 @@ import android.os.ResultReceiver;
 import com.corral.mityc.Constantes;
 import com.corral.mityc.Parseo;
 import com.corral.mityc.excepciones.RegistroNoExistente;
+import com.corral.mityc.util.MLog;
 import com.corral.mityc.util.NetworkUtils;
 
 import org.json.JSONArray;
@@ -29,7 +30,7 @@ import static com.corral.mityc.MitycRubi.NOM_LOC_DRAWERLIST;
 
 public class WSJsonGetMunicipiosPorProvincia {
 
-    private static final String TAG = WSJsonGetMunicipiosPorProvincia.class.getSimpleName();
+    //private static final String TAG = WSJsonGetMunicipiosPorProvincia.class.getSimpleName();
 
     private static AsyncTask<String, Void, String> mTask;
 
@@ -76,10 +77,19 @@ public class WSJsonGetMunicipiosPorProvincia {
                     Bundle bundle = new Bundle();
                     bundle.putString(Constantes.RESULT_DATA_KEY, codigoMityc);
                     mResultReceiver.send(Constantes.SUCCESS_RESULT, bundle);
+
+                    MLog.v(Constantes.TAG, "WSJsonGetMunicipiosPorProvincia::onPostExecute() " +
+                                    " Se encontró en Mityc la población " + poblacion);
                 } else {
-                    Bundle bundle = new Bundle();
+
+                    MLog.v(Constantes.TAG, "WSJsonGetMunicipiosPorProvincia::onPostExecute() " +
+                                    " No se encontró en Mityc la población " + poblacion);
+
+                            Bundle bundle = new Bundle();
                     bundle.putString(Constantes.RESULT_DATA_KEY, "");
-                    mResultReceiver.send(Constantes.FAILURE_RESULT, bundle);
+                    mResultReceiver.send(
+                            codigoMityc==null? Constantes.FAILURE_NOTFOUND:Constantes.FAILURE_RESULT,
+                            bundle);
                 }
             }
 
@@ -116,9 +126,27 @@ public class WSJsonGetMunicipiosPorProvincia {
 
                 // transformamos a mayusculas y quitamos acentos y artículos a cada población de mityc.
                 for (String codigoMityc: hm.keySet()) {
-                    String pobMityc = Parseo.sinAcentos(hm.get(codigoMityc));
+
+                    // si encontramos el caracter '/' (que indica la misma población en idioma local)
+                    // creamos la misma población en dos líneas pero con la población en cada idioma
+                    // por separado.
+                    String v[] = hm.get(codigoMityc).split("/");
+                    for (int i = 0; i < v.length; i++) {
+                        String pobMityc = Parseo.sinAcentos(v[i]);
+                        pobMityc = Parseo.quitarPreposiciones(pobMityc);
+                        hm.put(codigoMityc, pobMityc.trim());
+                    }
+
+                    /*
+                    if (codigoMityc.contains("/")) {
+                        String pobMityc = Parseo.sinAcentos(hm.get(codigoMityc.split("/")[0]));
+                        pobMityc = Parseo.quitarPreposiciones(pobMityc);
+                        hm.put(codigoMityc, pobMityc.trim());
+                    }
+                    String pobMityc = Parseo.sinAcentos(hm.get(codigoMityc.split("/")[1]));
                     pobMityc = Parseo.quitarPreposiciones(pobMityc);
                     hm.put(codigoMityc, pobMityc.trim());
+                    */
                 }
 
                 // tenemos la lista de mityc (codigo, poblacion) en mayusculas, sin acentos ni

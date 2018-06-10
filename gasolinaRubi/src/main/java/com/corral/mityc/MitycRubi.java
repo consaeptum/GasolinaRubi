@@ -58,6 +58,7 @@ import com.corral.mityc.servicios.GeocoderHelperConAsynctask;
 import com.corral.mityc.servicios.LocationPoblacionCentroIntentService;
 import com.corral.mityc.servicios.WSJsonGetEstacionesPorPoblacion;
 import com.corral.mityc.util.AutoResizeTextView;
+import com.corral.mityc.util.MLog;
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.gms.common.ConnectionResult;
@@ -189,6 +190,9 @@ public class MitycRubi extends AppCompatActivity implements
 
     @Override
     public void onLocationChanged(Location location) {
+
+        MLog.v(Constantes.TAG, "onLocationChanged() ...");
+
         localizacionConseguida(location);
         //actualizar();
         disableLocationUpdates();
@@ -252,8 +256,13 @@ public class MitycRubi extends AppCompatActivity implements
         // la población seleccionada y no ver la localización donde estamos, evitamos llamar a
         // enableLocationUpdates si cambioPoblación es verdadero.
         if (locationEnabled()) {
-            if (permisosGps() && !cambioPoblacion)
+            if (permisosGps() && !cambioPoblacion) {
                 enableLocationUpdates();
+
+
+                MLog.v(Constantes.TAG, " onConnected() :::  llamada a enableLocationUpdates()  ...");
+            }
+
         } else {
             infoFalloConexión(true);
         }
@@ -356,6 +365,8 @@ public class MitycRubi extends AppCompatActivity implements
             public void onLocationResult(LocationResult locationResult) {
                 for (Location location : locationResult.getLocations()) {
                     // manejamos la primera que salga
+
+                    MLog.v(Constantes.TAG, " LocationCallback :: (MitycRubi.onCreate()): onLocationResult ...");
                     localizacionConseguida(location);
                     break;
                 }
@@ -718,6 +729,26 @@ public class MitycRubi extends AppCompatActivity implements
         alert.show();
     }
 
+    public void infoFalloMitycDB(String poblacion) {
+        final AlertDialog.Builder alert;
+        alert = new AlertDialog.Builder(this);
+        LayoutInflater inflater = MitycRubi.this.getLayoutInflater();
+        final View dialogView = inflater.inflate(R.layout.info_mityc_db_poblacion, null);
+        TextView tv = (TextView) dialogView.findViewById(R.id.conexionText);
+
+        tv.setText(getString(R.string.inform_conexion_text_nopoblaciondb));
+
+        alert.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                mGoogleApiClient.disconnect();
+                getProgressBar().dismiss();
+            }
+        });
+
+        alert.setInverseBackgroundForced(true);
+        alert.setView(dialogView);
+        alert.show();
+    }
 
     public Boolean locationEnabled() {
         Boolean gps_enabled = false;
@@ -900,9 +931,21 @@ public class MitycRubi extends AppCompatActivity implements
         //mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         mLastLocation = location;
 
-        // test Terrassa
-        //mLastLocation.setLatitude(41.561111);
-        //mLastLocation.setLongitude(2.008056);
+        // test Les Fonts
+        //mLastLocation.setLatitude(41.528145);
+        //mLastLocation.setLongitude(2.033808);
+
+        // test Alicante / Alacant
+        //mLastLocation.setLatitude(38.362262);
+        //mLastLocation.setLongitude(-0.483169);
+
+        // test VILLAJOYOSA / VILA JOIOSA (LA)|1204|38.5079606|-0.2285807
+        //mLastLocation.setLatitude(38.50790606);
+        //mLastLocation.setLongitude(-0.228507);
+
+        // test Moixent 46|MOGENTE/MOIXENT|62498|38.8743266|-0.7520927
+        //mLastLocation.setLatitude(38.8743266);
+        //mLastLocation.setLongitude(-0.7520927);
 
         // test SantCugat
         //mLastLocation.setLatitude(41.473538);
@@ -922,7 +965,6 @@ public class MitycRubi extends AppCompatActivity implements
 
         // una vez tenemos las coordenadas preparamos el mapa para que luego automaticamente
         // se llame a onMapReady()
-
         // iniciamos servicio de geolocalizacion.
         mCityNameResultReceiverFromGeocoder = new CityNameResultReceiverFromGeocoder(new Handler(), this);
         new GeocoderHelperConAsynctask().fetchCityNameFromLocation(this, mCityNameResultReceiverFromGeocoder, mLastLocation);

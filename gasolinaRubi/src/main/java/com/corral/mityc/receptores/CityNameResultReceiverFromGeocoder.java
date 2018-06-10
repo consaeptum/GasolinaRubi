@@ -12,6 +12,7 @@ import com.corral.mityc.MitycRubi;
 import com.corral.mityc.Parseo;
 import com.corral.mityc.R;
 import com.corral.mityc.servicios.WSJsonGetMunicipiosPorProvincia;
+import com.corral.mityc.util.MLog;
 import com.google.android.gms.maps.MapFragment;
 
 import static com.corral.mityc.MitycRubi.COD_LOC_DRAWERLIST;
@@ -63,32 +64,14 @@ public class CityNameResultReceiverFromGeocoder extends ResultReceiver {
                 cpprov = cp.substring(0, 2);
                 mitycRubi.PROV_DRAWERLIST = Parseo.buscarProvinciaCodigo(cpprov);
 
-                //mitycRubi.getLastLocation().setProvider(poblacion); // trick
-                //if (cpprov.startsWith("0")) cpprov = cpprov.substring(1, 2);
-
-                /*
-                Pattern p = Pattern.compile("^(.*)\\s([0-9]{5})$"); // "poblacion códigoPostal"
-                //Pattern p = Pattern.compile("^(.*)([0-9]{5}) (.*), (.*),(.*)$");
-                Matcher m = p.matcher(mDireccionResultado);
-                */
-
-                //if (m.matches()) {
-                //    String cp = m.group(2);
-                //    String poblacion = m.group(1);
-                //    cpprov = cp.substring(0, 2);
-                //    mitycRubi.getLastLocation().setProvider(poblacion); // trick
-                //    if (cpprov.startsWith("0")) cpprov = cpprov.substring(1, 2);
+                MLog.v(Constantes.TAG, "CityNameResultReceiverFromGeocoder::onReceiveResult() "
+                        + " PROV_DRAWERLIST " + mitycRubi.PROV_DRAWERLIST + "#" +
+                        " poblacion " + poblacion + "#" +
+                        " barrio " + barrio + "#" + cp );
 
                 NOM_LOCALIDAD = poblacion;
                 NOM_LOC_DRAWERLIST = poblacion;
                 SUBNOM_LOC_DRAWERLIST = barrio;
-
-/*
-                if (!cambioPoblacion) {
-                    //COD_LOC_DRAWERLIST = codpob;
-                    NOM_LOC_DRAWERLIST = poblacion;
-                }
-*/
 
                 mitycRubi.mostrarTituloBuscando(NOM_LOCALIDAD, SUBNOM_LOC_DRAWERLIST);
                 mitycRubi.getTp().recuperaCache(COD_LOC_DRAWERLIST, mitycRubi.getApplicationContext());
@@ -113,14 +96,6 @@ public class CityNameResultReceiverFromGeocoder extends ResultReceiver {
                 MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia mxp =
                         new MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia(new Handler(), mitycRubi);
 
-/*
-                if (cambioPoblacion) {
-                    //String pb = buscarPoblacionXCodigo(COD_LOC_DRAWERLIST);
-                    NOM_LOC_DRAWERLIST = poblacion;
-                    //if (pb != null) poblacion = pb;
-                    //cambioPoblacion = false;
-                }
-*/
                 WSJsonGetMunicipiosPorProvincia.obtenMunicipio(mxp, cpprov, poblacion);
 
             }

@@ -39,18 +39,12 @@
             android:name=".servicios.LocationPoblacionCentroIntentService"
             android:exported="false" />
 
-        <!-- debug key ==============================================
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyA8WBx-K8heBgZCXFd1JrDx9trwI2c_JwM" />
-        -->
 
-
-        <!--
-        release key ==== gasolinaRubi ========================== -->
+        <!-- release key ==== gasolinaRubi ========================== -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDRvqFweFI1QLpC7FCuonfswkXmsdL5k74" />
+
 
     </application>
 

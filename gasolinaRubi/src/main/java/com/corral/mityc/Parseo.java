@@ -1,6 +1,7 @@
 package com.corral.mityc;
 
 import com.corral.mityc.excepciones.RegistroNoExistente;
+import com.corral.mityc.util.MLog;
 
 import java.text.Normalizer;
 import java.util.HashMap;
@@ -61,6 +62,9 @@ public class Parseo {
      */
     public static String buscarCodigoPoblacionMityc(HashMap<String, String> hm, String poblacion)
             throws RegistroNoExistente {
+
+        MLog.v(Constantes.TAG, " com.corral.mityc.Parseo.buscarCodigoPoblacion: buscando .. " + poblacion);
+
         String[] poblSplited = poblacion.split(" ");
         String codPoblacion = "";
         // Map<codigo_poblacion, numero_coincidencias>
@@ -81,6 +85,9 @@ public class Parseo {
                         //
                         if (!coincidencias.containsKey(cod)) {
                             coincidencias.put(cod, 1);
+
+                            MLog.v(Constantes.TAG, " com.corral.mityc.Parseo.buscarCodigoPoblacion: coincidencia con .. "
+                                    + toponimioMityc);
                         } else {
                             coincidencias.put(cod, coincidencias.get(cod) + 1);
                         }

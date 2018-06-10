@@ -8,6 +8,7 @@ import android.os.ResultReceiver;
 import com.corral.mityc.Constantes;
 import com.corral.mityc.MitycRubi;
 import com.corral.mityc.servicios.WSJsonGetEstacionesPorPoblacion;
+import com.corral.mityc.util.MLog;
 
 /*
  * La acción a realizar cuando WSJsonGetMunicipiosPorProvincia
@@ -39,6 +40,10 @@ public class MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia extends
                 //mMitycRubi.COD_LOCALIDAD = mCodigoMitycPoblacionResultado;
                 mMitycRubi.COD_LOC_DRAWERLIST = mCodigoMitycPoblacionResultado;
 
+                MLog.v(Constantes.TAG, getClass().getCanonicalName().
+                        concat(" código de mityc : " + mCodigoMitycPoblacionResultado ));
+
+
                 // utilizamos WSJsonGetEstacionesPorPoblacion para obtener la lista
                 // de estaciones de Mityc.
 
@@ -50,7 +55,21 @@ public class MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia extends
                 mMitycRubi.infoFalloConexión(false);
             }
         } else {
-            mMitycRubi.infoFalloConexión(false);
+
+            // si el fallo es que no hay conexión o datos
+            if (resultCode == Constantes.FAILURE_RESULT) {
+                mMitycRubi.infoFalloConexión(false);
+
+                MLog.v(Constantes.TAG, "MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia::onReceiveResult() " +
+                        " Fallo de conexión ");
+
+            // si el fallo es que no se encuentra la población en Mityc pero sí en Maps.
+            } else {
+                MLog.v(Constantes.TAG, "MunicXProvResultReceiverFromWSJsonGetMunicipiosPorProvincia::onReceiveResult() " +
+                                " Falta la población en la base de datos de Mityc ");
+
+                mMitycRubi.infoFalloMitycDB(mMitycRubi.NOM_LOCALIDAD);
+            }
         }
     }
 }

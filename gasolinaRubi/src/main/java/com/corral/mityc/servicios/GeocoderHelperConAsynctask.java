@@ -8,6 +8,7 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ResultReceiver;
+import android.util.Log;
 
 import com.corral.mityc.Constantes;
 import com.corral.mityc.MitycRubi;
@@ -38,6 +39,8 @@ public class GeocoderHelperConAsynctask
 {
     //private static final AndroidHttpClient ANDROID_HTTP_CLIENT = AndroidHttpClient.newInstance(GeocoderHelperConAsynctask.class.getName());
     private static AsyncTask<Void, Void, String> mTask;
+
+    private static final String TAG = "MitycRubi__";
 
     private boolean running = false;
 
@@ -101,10 +104,12 @@ public class GeocoderHelperConAsynctask
 
                 if (cityNameCP != null) // i.e., Geocoder succeed
                 {
+                    Log.v(TAG, "GeocoderHelper::GeocoderHelperConAsynctask() " );
                     return cityNameCP;
                 }
                 else // i.e., Geocoder failed
                 {
+                    Log.v(TAG, "GeocoderHelper::fetchCityNameUsingGoogleMap " );
                     return fetchCityNameUsingGoogleMap();
                 }
             }
